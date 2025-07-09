@@ -4,58 +4,104 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Nahfi - Official Site</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0; font-family: sans-serif;
-      background-color: #111; color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      background: linear-gradient(to bottom, #111, #1a1a1a);
+      color: #f0f0f0;
+      line-height: 1.6;
     }
     header {
-      padding: 80px 20px 20px; text-align: center;
+      padding: 80px 20px 20px;
+      text-align: center;
     }
-    h1 { font-size: 3em; margin: 0; }
-    p.tagline { color: #888; margin-top: 10px; }
-    section { padding: 40px 20px; max-width: 900px; margin: auto; }
-    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+    h1 {
+      font-size: 3em;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .tagline {
+      color: #888;
+      margin-top: 10px;
+      font-size: 1.1em;
+    }
+
+    .section {
+      padding: 60px 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+    .section h2 {
+      font-size: 2em;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+    }
+
     .card {
-      background: #222; padding: 20px; border-radius: 12px;
-      transition: transform 0.2s;
+      background-color: #222;
+      padding: 25px;
+      border-radius: 16px;
+      transition: transform 0.3s, box-shadow 0.3s;
+      border: 1px solid #333;
     }
-    .card:hover { transform: translateY(-5px); background: #333; }
-    footer { text-align: center; padding: 40px 20px; color: #666; font-size: 0.9em; }
-    a { color: #6cf; text-decoration: none; }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 0 15px rgba(255,255,255,0.1);
+      border-color: #555;
+    }
+
+    footer {
+      text-align: center;
+      padding: 60px 20px;
+      font-size: 0.9em;
+      color: #888;
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 2.2em; }
+      .section { padding: 40px 15px; }
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>Nahfi</h1>
-    <p class="tagline">独立创作者，热爱街头与设计。</p>
+    <p class="tagline">独立创作者 · 街头热爱者 · 数字产品构建者</p>
   </header>
 
-  <section>
-    <h2>作品展示</h2>
-    <div class="card-grid">
+  <section class="section">
+    <h2>精选作品</h2>
+    <div class="grid">
       <div class="card">
-        <h3>项目 A</h3>
-        <p>某某 3D 建模项目，点击了解更多。</p>
+        <h3>城市插画系列</h3>
+        <p>用矢量图还原成都街头，融合涂鸦与线稿风格。</p>
       </div>
       <div class="card">
-        <h3>项目 B</h3>
-        <p>结合城市文化与插画的实验作品。</p>
+        <h3>Hip-Hop 数字藏品</h3>
+        <p>一套基于自创角色「Nahfi」的街头文化 NFT。</p>
       </div>
       <div class="card">
-        <h3>项目 C</h3>
-        <p>个人微信小程序，玩法新颖，界面极简。</p>
+        <h3>Web 小游戏原型</h3>
+        <p>融合“合成+养成”的独立网页小游戏，支持移动端。</p>
       </div>
     </div>
   </section>
 
-  <section>
+  <section class="section">
     <h2>关于我</h2>
-    <p>我是一名自由创作者，擅长视觉设计、街头文化内容与数字产品开发，正在打造 Nahfi 这一独立 IP。</p>
+    <p>我热爱创造新的东西，从街头文化中汲取灵感，把它注入插画、交互、音乐或游戏中。Nahfi 是我打造的世界，我在其中不断构建、实验、表达。</p>
   </section>
 
   <footer>
-    <p>联系我：<a href="mailto:you@example.com">you@example.com</a> · &copy; 2025 Nahfi</p>
+    <p>联系：<a href="mailto:you@example.com">you@example.com</a> · &copy; 2025 Nahfi</p>
   </footer>
 </body>
 </html>
