@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nahfi - 作品集与博客</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     body {
       background-color: #1a1a1a;
@@ -18,16 +19,32 @@
       text-align: center;
       margin-bottom: 2rem;
     }
-    .portfolio-card, .collection-card {
+    .portfolio-card, .collection-card, .gallery-card, .inspiration-card {
       transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .portfolio-card:hover, .collection-card:hover {
+    .portfolio-card:hover, .collection-card:hover, .gallery-card:hover, .inspiration-card:hover {
       transform: translateY(-5px);
       box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
     }
     .blog-post {
       border-left: 4px solid #4b5563;
       padding-left: 1rem;
+    }
+    #model-viewer {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 50;
+      justify-content: center;
+      align-items: center;
+    }
+    #model-canvas {
+      width: 80%;
+      height: 80%;
     }
   </style>
 </head>
@@ -38,9 +55,12 @@
       <h1 class="text-2xl font-bold text-white">Nahfi</h1>
       <ul class="flex space-x-6">
         <li><a href="#portfolio" class="hover:text-gray-300">作品集</a></li>
+        <li><a href="#gallery" class="hover:text-gray-300">画作集</a></li>
         <li><a href="#collections" class="hover:text-gray-300">收藏</a></li>
+        <li><a href="#inspiration" class="hover:text-gray-300">灵感板</a></li>
         <li><a href="#about" class="hover:text-gray-300">关于</a></li>
         <li><a href="#blog" class="hover:text-gray-300">博客</a></li>
+        <li><a href="#contact" class="hover:text-gray-300">联系</a></li>
       </ul>
     </div>
   </nav>
@@ -49,7 +69,7 @@
   <section class="bg-gray-800 py-20 text-center">
     <div class="container mx-auto">
       <h2 class="text-5xl font-extrabold text-white mb-4">欢迎体验Nahfi的世界</h2>
-      <p class="text-lg text-gray-400">探索我的创作、想法和收藏。</p>
+      <p class="text-lg text-gray-400">探索我的三维设计、画作、户外冒险与嘻哈灵感。</p>
     </div>
   </section>
 
@@ -59,23 +79,47 @@
       <h2 class="section-title">作品集</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div class="portfolio-card bg-gray-700 rounded-lg p-6">
-          <h3 class="text-xl font-semibold text-white">项目 1</h3>
-          <p class="text-gray-400 mt-2">一件探索极简主义和灰度美学的数字艺术作品。</p>
+          <h3 class="text-xl font-semibold text-white">3D 项目：城市雕塑</h3>
+          <p class="text-gray-400 mt-2">一座现代城市主题的 3D 雕塑模型，可交互查看。</p>
+          <button onclick="show3DModel('model1')" class="mt-4 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded">查看 3D 模型</button>
         </div>
         <div class="portfolio-card bg-gray-700 rounded-lg p-6">
-          <h3 class="text-xl font-semibold text-white">项目 2</h3>
-          <p class="text-gray-400 mt-2">一组捕捉黑白城市景观的摄影系列。</p>
+          <h3 class="text-xl font-semibold text-white">3D 项目：虚拟场景</h3>
+          <p class="text-gray-400 mt-2">一个基于嘻哈文化的虚拟城市环境设计。</p>
+          <button onclick="show3DModel('model2')" class="mt-4 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded">查看 3D 模型</button>
         </div>
         <div class="portfolio-card bg-gray-700 rounded-lg p-6">
-          <h3 class="text-xl font-semibold text-white">项目 3</h3>
-          <p class="text-gray-400 mt-2">一部以单色叙事为焦点的短片。</p>
+          <h3 class="text-xl font-semibold text-white">3D 项目：户外装置</h3>
+          <p class="text-gray-400 mt-2">灵感来自山林的交互式装置模型。</p>
+          <button onclick="show3DModel('model3')" class="mt-4 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded">查看 3D 模型</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 画作集部分 -->
+  <section id="gallery" class="py-16 bg-gray-900">
+    <div class="container mx-auto">
+      <h2 class="section-title">画作集</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="gallery-card bg-gray-700 rounded-lg p-6">
+          <img src="placeholder-art1.jpg" alt="嘻哈插画" class="w-full h-64 object-cover rounded">
+          <p class="text-gray-400 mt-2">嘻哈风格插画，灵感来自街头涂鸦。</p>
+        </div>
+        <div class="gallery-card bg-gray-700 rounded-lg p-6">
+          <img src="placeholder-art2.jpg" alt="户外风景" class="w-full h-64 object-cover rounded">
+          <p class="text-gray-400 mt-2">描绘黄山日出的数字绘画。</p>
+        </div>
+        <div class="gallery-card bg-gray-700 rounded-lg p-6">
+          <img src="placeholder-art3.jpg" alt="抽象艺术" class="w-full h-64 object-cover rounded">
+          <p class="text-gray-400 mt-2">结合嘻哈与自然的抽象作品。</p>
         </div>
       </div>
     </div>
   </section>
 
   <!-- 收藏部分 -->
-  <section id="collections" class="py-16 bg-gray-900">
+  <section id="collections" class="py-16">
     <div class="container mx-auto">
       <h2 class="section-title">收藏</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -84,8 +128,29 @@
           <p class="text-gray-400 mt-2">20世纪经典胶片相机的精选收藏。</p>
         </div>
         <div class="collection-card bg-gray-700 rounded-lg p-6">
-          <h3 class="text-xl font-semibold text-white">单色艺术</h3>
-          <p class="text-gray-400 mt-2">精选的以黑灰色调为主的艺术作品。</p>
+          <h3 class="text-xl font-semibold text-white">嘻哈唱片</h3>
+          <p class="text-gray-400 mt-2">90年代经典嘻哈黑胶唱片收藏。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 灵感板部分 -->
+  <section id="inspiration" class="py-16 bg-gray-900">
+    <div class="container mx-auto">
+      <h2 class="section-title">嘻哈灵感</h2>
+      <div class="columns-2 md:columns-3 gap-4">
+        <div class="inspiration-card bg-gray-700 rounded-lg p-4 mb-4">
+          <img src="hiphop-art.jpg" alt="街头涂鸦" class="w-full rounded">
+          <p class="text-gray-400 mt-2">灵感来自90年代嘻哈涂鸦。</p>
+        </div>
+        <div class="inspiration-card bg-gray-700 rounded-lg p-4 mb-4">
+          <img src="hiphop-album.jpg" alt="专辑封面" class="w-full rounded">
+          <p class="text-gray-400 mt-2">经典嘻哈专辑封面设计。</p>
+        </div>
+        <div class="inspiration-card bg-gray-700 rounded-lg p-4 mb-4">
+          <img src="streetwear.jpg" alt="街头服饰" class="w-full rounded">
+          <p class="text-gray-400 mt-2">嘻哈风格街头服饰灵感。</p>
         </div>
       </div>
     </div>
@@ -97,13 +162,8 @@
       <h2 class="section-title">关于 Nahfi</h2>
       <div class="max-w-2xl mx-auto text-center">
         <p class="text-gray-400">
-          Nahfi 是一位热爱艺术、摄影和叙故事的创作者。热衷于灰度zilla
-
-System: 度美学的数字艺术作品。
-        </div>
-        <div class="portfolio-card bg-gray-700 rounded-lg p-6">
-          <h3 class="text-xlgly-400 mt-2">Nahfi喜欢通过博客分享想法，记录创作过程和灵感。</p>
-        </div>
+          Nahfi 是一位热爱三维设计与绘画的创作者，专注于黑灰色调的极简美学。作品融合户外自然与嘻哈文化的灵感，展现独特的故事性。闲暇时，Nahfi 喜欢徒步山林、收集复古相机与嘻哈唱片，并通过博客分享创作与冒险的点滴。
+        </p>
       </div>
     </div>
   </section>
@@ -125,8 +185,23 @@ System: 度美学的数字艺术作品。
       <div id="blog-posts" class="space-y-6">
         <div class="blog-post bg-gray-800 p-6 rounded-lg">
           <h3 class="text-xl font-semibold text-white">初次感想</h3>
-          <p class="text-gray-400 mt-2">欢迎体验我的博客！在这里，我将分享我的创作过程和想法。</p>
+          <p class="text-gray-400 mt-2">欢迎体验我的博客！在这里，我将分享我的创作过程、户外冒险与嘻哈灵感。</p>
           <p class="text-gray-500 text-sm mt-2">发布于 2025年7月11日</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 联系部分 -->
+  <section id="contact" class="py-16">
+    <div class="container mx-auto">
+      <h2 class="section-title">联系我</h2>
+      <div class="max-w-2xl mx-auto">
+        <div class="bg-gray-800 p-6 rounded-lg">
+          <input type="text" placeholder="姓名" class="w-full p-2 mb-4 bg-gray-700 text-white rounded">
+          <input type="email" placeholder="邮箱" class="w-full p-2 mb-4 bg-gray-700 text-white rounded">
+          <textarea placeholder="你的消息" class="w-full p-2 bg-gray-700 text-white rounded h-32"></textarea>
+          <button type="button" onclick="alert('消息已提交（模拟）！')" class="mt-4 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded">发送</button>
         </div>
       </div>
     </div>
@@ -134,10 +209,21 @@ System: 度美学的数字艺术作品。
 
   <!-- 页脚 -->
   <footer class="bg-gray-900 py-6 text-center">
+    <div class="flex justify-center space-x-4 mb-4">
+      <a href="https://x.com/yourprofile" class="text-gray-400 hover:text-white">X</a>
+      <a href="https://instagram.com/yourprofile" class="text-gray-400 hover:text-white">Instagram</a>
+    </div>
     <p class="text-gray-400">© 2025 Nahfi. 保留所有权利。</p>
   </footer>
 
+  <!-- 3D 模型查看器 -->
+  <div id="model-viewer">
+    <div id="model-canvas"></div>
+    <button onclick="close3DModel()" class="absolute top-4 right-4 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded">关闭</button>
+  </div>
+
   <script>
+    // 博客功能
     function addBlogPost() {
       const title = document.getElementById('blog-title').value;
       const content = document.getElementById('blog-content').value;
@@ -156,6 +242,50 @@ System: 度美学的数字艺术作品。
       } else {
         alert('请填写标题和内容。');
       }
+    }
+
+    // Three.js 3D 模型查看器
+    let scene, camera, renderer, model;
+    function init3DViewer() {
+      const viewer = document.getElementById('model-canvas');
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, viewer.clientWidth / viewer.clientHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+      viewer.appendChild(renderer.domElement);
+
+      const light = new THREE.DirectionalLight(0xffffff, 0.8);
+      light.position.set(0, 1, 1);
+      scene.add(light);
+      scene.add(new THREE.AmbientLight(0x404040));
+
+      camera.position.z = 5;
+
+      // 占位几何体（需替换为实际 .glb 模型）
+      const geometry = new THREE.BoxGeometry();
+      const material = new THREE.MeshStandardMaterial({ color: 0x888888 });
+      model = new THREE.Mesh(geometry, material);
+      scene.add(model);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        model.rotation.y += 0.01;
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
+
+    function show3DModel(modelId) {
+      const viewer = document.getElementById('model-viewer');
+      viewer.style.display = 'flex';
+      init3DViewer();
+      // 实际应用中需加载 modelId 对应的 .glb 文件
+    }
+
+    function close3DModel() {
+      const viewer = document.getElementById('model-viewer');
+      viewer.style.display = 'none';
+      viewer.innerHTML = '<div id="model-canvas"></div>';
     }
   </script>
 </body>
