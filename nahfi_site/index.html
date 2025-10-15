@@ -73,29 +73,30 @@
     </div>
   </section>
 
-  <!-- 作品集部分 -->
-  <section id="portfolio" class="py-16">
-    <div class="container mx-auto">
-      <h2 class="section-title">作品集</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="portfolio-card bg-gray-700 rounded-lg p-6">
-          <h3 class="text-xl font-semibold text-white">3D 项目：城市雕塑</h3>
-          <p class="text-gray-400 mt-2">一座现代城市主题的 3D 雕塑模型，可交互查看。</p>
-          <button onclick="show3DModel('model1')" class="mt-4 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded">查看 3D 模型</button>
-        </div>
-        <div class="portfolio-card bg-gray-700 rounded-lg p-6">
-          <h3 class="text-xl font-semibold text-white">3D 项目：虚拟场景</h3>
-          <p class="text-gray-400 mt-2">一个基于嘻哈文化的虚拟城市环境设计。</p>
-          <button onclick="show3DModel('model2')" class="mt-4 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded">查看 3D 模型</button>
-        </div>
-        <div class="portfolio-card bg-gray-700 rounded-lg p-6">
-          <h3 class="text-xl font-semibold text-white">3D 项目：户外装置</h3>
-          <p class="text-gray-400 mt-2">灵感来自山林的交互式装置模型。</p>
-          <button onclick="show3DModel('model3')" class="mt-4 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded">查看 3D 模型</button>
-        </div>
-      </div>
-    </div>
-  </section>
+ <section id="windy-map" style="padding: 40px 0; text-align: center;">
+  <h2 style="color: #fff; font-size: 1.5rem; margin-bottom: 20px;">
+    🌬️ 实时风场与天气图
+  </h2>
+
+  <div style="
+      position: relative;
+      width: 90%;
+      max-width: 1100px;
+      margin: 0 auto;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 0 25px rgba(0,0,0,0.3);
+  ">
+    <iframe
+      src="https://embed.windy.com/embed2.html?lat=30.67&lon=104.06&zoom=6&level=surface&overlay=wind&product=ecmwf&menu=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
+      frameborder="0"
+      style="width: 100%; height: 600px; border: none;"
+      loading="lazy"
+      allowfullscreen>
+    </iframe>
+  </div>
+</section>
+
 
   <!-- 画作集部分 -->
   <section id="gallery" class="py-16 bg-gray-900">
@@ -290,6 +291,7 @@
   </script>
 </body>
 </html>
+
 
 
 
