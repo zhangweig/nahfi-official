@@ -4,28 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nahfi - 3D Explore</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.0.28/build/spline-viewer.js"></script>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.68/build/spline-viewer.js"></script>
+  
   <style>
-    @import url(<script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.68/build/spline-viewer.js"></script>
-<spline-viewer url="https://prod.spline.design/qefAA4ph1RCs2Hxm/scene.splinecode"></spline-viewer>);
+    /* CSS 里只放样式，不要放脚本标签 */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;700&display=swap');
     
     body {
       background-color: #000;
       color: #d1d5db;
       font-family: 'Inter', sans-serif;
       scroll-behavior: smooth;
+      margin: 0;
     }
 
-    /* 全屏 3D 容器 */
     .hero-3d {
       position: relative;
       height: 100vh;
       width: 100%;
       overflow: hidden;
+      background: #000; /* 加载前的底色 */
     }
 
-    /* 右侧选项栏美化 */
     .glass-menu {
       position: absolute;
       right: 2rem;
@@ -33,6 +35,7 @@
       transform: translateY(-50%);
       background: rgba(255, 255, 255, 0.05);
       backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 1.5rem;
       padding: 1.5rem;
@@ -42,14 +45,17 @@
     .menu-item {
       display: block;
       width: 100%;
+      min-width: 120px;
       padding: 0.75rem 1.25rem;
       margin: 0.5rem 0;
       background: rgba(255, 255, 255, 0.1);
+      border: none;
       border-radius: 0.75rem;
       transition: all 0.3s ease;
       text-align: center;
       font-size: 0.875rem;
       color: #fff;
+      cursor: pointer;
     }
 
     .menu-item:hover {
@@ -58,7 +64,6 @@
       transform: scale(1.05);
     }
 
-    /* 隐藏 Spline 的 Logo（虽然它们有 Logo 保护，但可以用这招隐藏底部条） */
     spline-viewer {
       width: 100%;
       height: 100%;
@@ -79,27 +84,26 @@
   </nav>
 
   <section class="hero-3d">
-    <spline-viewer url="https://prod.spline.design/6Wq1Q7YTesEglh7t/scene.splinecode"></spline-viewer>
+    <spline-viewer url="https://prod.spline.design/qefAA4ph1RCs2Hxm/scene.splinecode"></spline-viewer>
 
     <div class="glass-menu shadow-2xl">
-      <p class="text-xs text-gray-500 mb-4 text-center font-bold">NAHFI INTERACT</p>
-      <button class="menu-item" onclick="alert('这里可以联动Spline的状态切换')">重置视角</button>
+      <p class="text-[10px] text-gray-500 mb-4 text-center tracking-[0.2em] font-bold">NAHFI INTERACT</p>
+      <button class="menu-item">重置视角</button>
       <button class="menu-item">切换配色</button>
-      <button class="menu-item">动画 A</button>
-      <button class="menu-item">动画 B</button>
-      <div class="mt-4 pt-4 border-t border-white/10 text-[10px] text-center text-gray-400">
-        Drag to Orbit<br>Scroll to Zoom
+      <button class="menu-item">动作演示</button>
+      <div class="mt-4 pt-4 border-t border-white/10 text-[10px] text-center text-gray-400 leading-relaxed">
+        鼠标拖动旋转<br>滚轮缩放查看
       </div>
     </div>
 
     <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
-        <span class="text-xs tracking-widest text-gray-500">SCROLL DOWN</span>
+        <span class="text-[10px] tracking-[0.3em] text-gray-500 uppercase">Scroll Down</span>
     </div>
   </section>
 
   <section id="windy-map" class="py-24 bg-black">
     <div class="container mx-auto px-4">
-        <h2 class="text-center text-2xl font-light mb-12 tracking-widest text-white">REALTIME ENVIRONMENT</h2>
+        <h2 class="text-center text-xl font-light mb-12 tracking-[0.5em] text-white">ENVIRONMENT</h2>
         <div class="rounded-3xl overflow-hidden shadow-2xl border border-white/10">
             <iframe
                 src="https://embed.windy.com/embed2.html?lat=30.67&lon=104.06&zoom=6&level=surface&overlay=wind&product=ecmwf&menu=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
@@ -114,16 +118,16 @@
 
   <section id="gallery" class="py-24 bg-[#0a0a0a]">
     <div class="container mx-auto px-4">
-      <h2 class="text-4xl font-bold text-white mb-12">Gallery</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-1">
-        <div class="aspect-square bg-gray-800 hover:opacity-80 transition cursor-pointer overflow-hidden">
-            <img src="placeholder-art1.jpg" class="w-full h-full object-cover">
+      <h2 class="text-3xl font-bold text-white mb-12 tracking-tight">Gallery</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="aspect-square bg-gray-900 rounded-2xl border border-white/5 overflow-hidden">
+            <div class="w-full h-full flex items-center justify-center text-gray-700">Image 01</div>
         </div>
-        <div class="aspect-square bg-gray-700 hover:opacity-80 transition cursor-pointer overflow-hidden">
-            <img src="placeholder-art2.jpg" class="w-full h-full object-cover">
+        <div class="aspect-square bg-gray-900 rounded-2xl border border-white/5 overflow-hidden">
+            <div class="w-full h-full flex items-center justify-center text-gray-700">Image 02</div>
         </div>
-        <div class="aspect-square bg-gray-800 hover:opacity-80 transition cursor-pointer overflow-hidden">
-            <img src="placeholder-art3.jpg" class="w-full h-full object-cover">
+        <div class="aspect-square bg-gray-900 rounded-2xl border border-white/5 overflow-hidden">
+            <div class="w-full h-full flex items-center justify-center text-gray-700">Image 03</div>
         </div>
       </div>
     </div>
@@ -131,19 +135,19 @@
 
   <section id="blog" class="py-24 bg-black">
     <div class="container mx-auto max-w-4xl px-4">
-      <h2 class="text-4xl font-bold text-white mb-12">Dev Log</h2>
-      <div id="blog-posts" class="space-y-12">
-        <div class="group">
-          <p class="text-sm text-gray-500 mb-2">2026.03.11</p>
-          <h3 class="text-2xl font-semibold text-white group-hover:text-blue-400 transition cursor-pointer">Nahfi 3D 网站构建记录</h3>
-          <p class="text-gray-400 mt-4 leading-relaxed">今天成功接入了 Spline 渲染引擎，Nahfi 的 3D 模型在网页上运行非常流畅...</p>
+      <h2 class="text-3xl font-bold text-white mb-12 tracking-tight">Dev Log</h2>
+      <div class="space-y-12">
+        <div class="group border-l border-white/10 pl-8">
+          <p class="text-xs text-gray-500 mb-2">2026.03.11</p>
+          <h3 class="text-xl font-medium text-white group-hover:text-blue-400 transition cursor-pointer">Nahfi 3D 系统上线</h3>
+          <p class="text-gray-400 mt-4 leading-relaxed text-sm">成功整合 Spline 1.12 版本内核，实现了高性能的 WebGL 角色渲染...</p>
         </div>
       </div>
     </div>
   </section>
 
-  <footer class="py-12 border-t border-white/5 text-center text-xs text-gray-600 tracking-widest">
-    © 2026 NAHFI.ASIA / ALL RIGHTS RESERVED.
+  <footer class="py-12 border-t border-white/5 text-center text-[10px] text-gray-600 tracking-[0.3em]">
+    © 2026 NAHFI.ASIA / DESIGNED FOR THE FUTURE
   </footer>
 
 </body>
