@@ -3,183 +3,194 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nahfi - Character Select</title>
+  <title>Nahfi - Minimalist Archive</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.68/build/spline-viewer.js"></script>
   
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;700&display=swap');
     
     body {
       background-color: #000;
-      color: #d1d5db;
+      color: #888;
       font-family: 'Inter', sans-serif;
       scroll-behavior: smooth;
       margin: 0;
       overflow-x: hidden;
     }
 
-    /* 全屏 3D 背景容器 */
+    /* 全屏 3D 背景 */
     .hero-3d {
       position: relative;
       height: 100vh;
       width: 100%;
-      overflow: hidden;
-      background: radial-gradient(circle at center, #111 0%, #000 100%);
+      background: #000;
     }
 
-    /* 右侧游戏化菜单 */
+    /* 极致极简 Logo */
+    .minimal-logo {
+      position: absolute;
+      top: 40px;
+      left: 40px;
+      z-index: 50;
+      opacity: 0.2; /* 初始几乎看不见 */
+      transition: opacity 0.8s ease;
+      width: 40px;
+    }
+    .minimal-logo:hover { opacity: 0.8; }
+
+    /* 右侧游戏化菜单 - 降低视觉存在感 */
     .glass-menu {
       position: absolute;
       right: 3rem;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.02);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 2rem;
-      padding: 2.5rem 1.5rem;
+      background: rgba(255, 255, 255, 0.01); /* 几乎全透明 */
+      backdrop-filter: blur(30px) saturate(120%);
+      -webkit-backdrop-filter: blur(30px);
+      border-left: 1px solid rgba(255, 255, 255, 0.03);
+      padding: 3rem 1.5rem;
       z-index: 20;
-      box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
     }
 
-    /* 角色选项按钮样式 */
     .menu-item {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 100%;
-      min-width: 180px;
-      height: 60px;
-      margin: 1rem 0;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 1rem;
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.2em;
-      color: #666;
+      width: 160px;
+      height: 44px;
+      margin: 0.8rem 0;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 2px; /* 趋向方正，更具硬朗感 */
+      transition: all 0.5s ease;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      color: #444;
       text-transform: uppercase;
       cursor: pointer;
     }
 
     .menu-item:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
-      transform: translateX(-10px);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #eee;
+      transform: scale(1.02);
     }
 
-    /* 选中时的“激活”样式 */
     .menu-item.active {
-      background: #fff;
+      background: rgba(255, 255, 255, 0.9);
       color: #000;
-      border: 1px solid #fff;
-      transform: translateX(-15px) scale(1.05);
-      box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+      border: none;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
     }
 
-    spline-viewer {
+    /* 几乎看不见的滚动指示器 - 线条化 */
+    .scroll-line {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      height: 60px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent);
+      z-index: 10;
+      overflow: hidden;
+    }
+    .scroll-line::after {
+      content: '';
+      position: absolute;
+      top: -60px;
+      left: 0;
       width: 100%;
       height: 100%;
+      background: #fff;
+      animation: lineFlow 3s infinite ease-in-out;
+    }
+    @keyframes lineFlow {
+      0% { top: -60px; opacity: 0; }
+      50% { opacity: 0.5; }
+      100% { top: 60px; opacity: 0; }
     }
 
-    /* 隐藏 Spline 默认的 UI 元素（可选） */
-    #nahfi-canvas { outline: none; }
+    /* 渐变遮罩层，提升 3D 的悬浮感 */
+    .vignette-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.4) 100%);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    spline-viewer { outline: none; }
   </style>
 </head>
-<body class="min-h-screen">
+<body>
 
-  <nav class="absolute top-0 w-full p-10 z-30 pointer-events-none">
-    <div class="container mx-auto flex justify-between items-center">
-      <h1 class="text-3xl font-black tracking-tighter text-white">NAHFI // ARCHIVE</h1>
-      <div class="hidden md:block">
-        <span class="text-[10px] text-gray-600 font-mono tracking-widest uppercase">System Status: Optimal</span>
-      </div>
-    </div>
-  </nav>
+  <div class="minimal-logo">
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 10L90 90M90 10L10 90" stroke="white" stroke-width="0.5"/>
+      <circle cx="50" cy="50" r="1.5" fill="white"/>
+    </svg>
+  </div>
 
   <section class="hero-3d">
+    <div class="vignette-overlay"></div>
+    
     <spline-viewer id="nahfiViewer" url="https://prod.spline.design/qefAA4ph1RCs2Hxm/scene.splinecode"></spline-viewer>
 
     <div class="glass-menu">
-      <p class="text-[9px] text-gray-700 mb-8 text-center tracking-[0.5em] uppercase font-bold">Identity Select</p>
+      <p class="text-[8px] text-gray-800 mb-10 text-center tracking-[0.8em] uppercase font-bold">Menu</p>
       
-      <button class="menu-item active" data-action="idle">Nahfi Original</button>
-      <button class="menu-item" data-action="action_01">Motion Mode</button>
-      <button class="menu-item" data-action="action_02">Secondary Pose</button>
+      <button class="menu-item active" data-action="idle">Original</button>
+      <button class="menu-item" data-action="action_01">Motion</button>
+      <button class="menu-item" data-action="action_02">Secondary</button>
       
-      <div class="mt-12 pt-8 border-t border-white/5 text-[9px] text-center text-gray-600 leading-relaxed tracking-[0.2em]">
-        DRAG TO ROTATE<br>SCROLL TO ZOOM
+      <div class="mt-16 pt-8 border-t border-white/5 text-[8px] text-center text-gray-800 leading-relaxed tracking-[0.3em]">
+        L-DRAG | R-ZOOM
       </div>
     </div>
 
-    <a href="#blog" class="absolute bottom-10 left-10 flex flex-col items-center group">
-        <span class="text-[10px] tracking-[0.4em] text-gray-600 uppercase mb-2 group-hover:text-white transition">Access Logs</span>
-        <div class="w-16 h-[1px] bg-gradient-to-r from-gray-600 to-transparent"></div>
-    </a>
+    <div class="scroll-line"></div>
   </section>
 
-  <section id="blog" class="py-32 bg-black">
-    <div class="container mx-auto max-w-4xl px-8">
-      <header class="mb-24">
-        <h2 class="text-5xl font-extrabold text-white tracking-tighter mb-4">Dev Log</h2>
-        <div class="h-[1px] w-20 bg-blue-600"></div>
-      </header>
-      
-      <div class="space-y-24">
-        <article class="group">
-          <div class="flex items-center space-x-6 mb-6">
-            <span class="text-xs font-mono text-gray-600">TIMESTAMP: 2026.03.11</span>
-            <div class="h-[1px] flex-grow bg-white/5"></div>
+  <section id="blog" class="py-40 bg-black">
+    <div class="container mx-auto max-w-3xl px-8">
+      <div class="space-y-32">
+        <article class="opacity-40 hover:opacity-100 transition duration-1000">
+          <div class="flex items-center space-x-4 mb-4">
+            <span class="text-[9px] font-mono text-gray-700 tracking-[0.4em]">LOG_ID: 2026_03</span>
           </div>
-          <h3 class="text-2xl font-bold text-white group-hover:text-blue-500 transition cursor-pointer mb-6">
-            Nahfi 3D Model Update: qefAA4ph...
-          </h3>
-          <p class="text-gray-500 leading-relaxed text-sm max-w-2xl">
-            成功部署最新的 Spline 场景。此版本优化了光影表现，并预留了多状态切换接口。目前正在进行动画序列的同步测试，以确保在不同浏览器下的交互流畅度。
+          <h3 class="text-xl font-light text-white tracking-widest mb-4">Digital Density Optimization</h3>
+          <p class="text-gray-600 leading-loose text-xs tracking-wide">
+            在 V0.82 版本中，我们剥离了多余的视觉噪音。现在的重点在于如何通过最少的像素表达最丰富的数据。
           </p>
-          <div class="mt-8 flex space-x-4">
-            <span class="text-[10px] text-gray-700 font-bold uppercase tracking-widest">#Identity_Update</span>
-            <span class="text-[10px] text-gray-700 font-bold uppercase tracking-widest">#V0.82</span>
-          </div>
         </article>
       </div>
     </div>
   </section>
 
-  <footer class="py-20 border-t border-white/5 text-center">
-    <p class="text-[10px] text-gray-800 tracking-[0.5em] uppercase font-light">
-      © 2026 NAHFI.ASIA / UNLOCKING DIGITAL DENSITY
-    </p>
+  <footer class="py-10 text-center opacity-20 hover:opacity-50 transition">
+    <p class="text-[8px] tracking-[1em] font-light">© NAHFI ASIA</p>
   </footer>
 
   <script type="module">
-    // 等待 Spline Viewer 加载
     const viewer = document.getElementById('nahfiViewer');
     const buttons = document.querySelectorAll('.menu-item');
 
     buttons.forEach(btn => {
       btn.addEventListener('click', () => {
-        // 切换 UI 的选中状态
         buttons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-
-        // 获取按钮对应的动作名称
         const action = btn.getAttribute('data-action');
-        console.log("Triggering Action:", action);
-
-        // 如果你在 Spline Events 里设置了触发器，
-        // 可以通过以下方式调用：
-        // viewer.emitEvent('mouseClick', '你的物体名称');
+        // 后续可以在这里通过 viewer.emitEvent 触发 Spline 动效
       });
     });
   </script>
 
 </body>
 </html>
+
 
 
 
