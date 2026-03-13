@@ -3,191 +3,277 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nahfi - Minimalist Archive</title>
+  <title>NAHFI.ASIA - 中文说唱地下博物馆</title>
   
- <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.68/build/spline-viewer.js"></script>
-<spline-viewer url="https://prod.spline.design/qefAA4ph1RCs2Hxm/scene.splinecode"></spline-viewer>
+  <!-- 1. 引入 Tailwind CSS 引擎 (用于直接渲染样式) -->
+  <script src="https://cdn.tailwindcss.com"></script>
   
+  <!-- 2. 引入 React 和 ReactDOM (CDN 静态资源) -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  
+  <!-- 3. 引入 Babel (用于在浏览器端直接编译 JSX 语法) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;700&display=swap');
-    
-    body {
-      background-color: #000;
-      color: #888;
-      font-family: 'Inter', sans-serif;
-      scroll-behavior: smooth;
-      margin: 0;
-      overflow-x: hidden;
-    }
-
-    /* 全屏 3D 背景 */
-    .hero-3d {
-      position: relative;
-      height: 100vh;
-      width: 100%;
-      background: #000;
-    }
-
-    /* 极致极简 Logo */
-    .minimal-logo {
-      position: absolute;
-      top: 40px;
-      left: 40px;
-      z-index: 50;
-      opacity: 0.2; /* 初始几乎看不见 */
-      transition: opacity 0.8s ease;
-      width: 40px;
-    }
-    .minimal-logo:hover { opacity: 0.8; }
-
-    /* 右侧游戏化菜单 - 降低视觉存在感 */
-    .glass-menu {
-      position: absolute;
-      right: 3rem;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.01); /* 几乎全透明 */
-      backdrop-filter: blur(30px) saturate(120%);
-      -webkit-backdrop-filter: blur(30px);
-      border-left: 1px solid rgba(255, 255, 255, 0.03);
-      padding: 3rem 1.5rem;
-      z-index: 20;
-    }
-
-    .menu-item {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 160px;
-      height: 44px;
-      margin: 0.8rem 0;
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 2px; /* 趋向方正，更具硬朗感 */
-      transition: all 0.5s ease;
-      font-size: 0.65rem;
-      letter-spacing: 0.3em;
-      color: #444;
-      text-transform: uppercase;
-      cursor: pointer;
-    }
-
-    .menu-item:hover {
-      border-color: rgba(255, 255, 255, 0.2);
-      color: #eee;
-      transform: scale(1.02);
-    }
-
-    .menu-item.active {
-      background: rgba(255, 255, 255, 0.9);
-      color: #000;
-      border: none;
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-    }
-
-    /* 几乎看不见的滚动指示器 - 线条化 */
-    .scroll-line {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 1px;
-      height: 60px;
-      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent);
-      z-index: 10;
-      overflow: hidden;
-    }
-    .scroll-line::after {
-      content: '';
-      position: absolute;
-      top: -60px;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #fff;
-      animation: lineFlow 3s infinite ease-in-out;
-    }
-    @keyframes lineFlow {
-      0% { top: -60px; opacity: 0; }
-      50% { opacity: 0.5; }
-      100% { top: 60px; opacity: 0; }
-    }
-
-    /* 渐变遮罩层，提升 3D 的悬浮感 */
-    .vignette-overlay {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.4) 100%);
+    /* 注入自定义的 CSS 动画和滤镜特效 */
+    body { margin: 0; background-color: #09090b; }
+    .crt-overlay {
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      background-size: 100% 4px, 6px 100%;
       pointer-events: none;
-      z-index: 5;
     }
-
-    spline-viewer { outline: none; }
+    .glitch-text { position: relative; }
+    .glitch-text::before, .glitch-text::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%; opacity: 0.8;
+    }
+    .glitch-text::before {
+      left: 2px; text-shadow: -2px 0 red; clip: rect(24px, 550px, 90px, 0);
+      animation: glitch-anim-2 3s infinite linear alternate-reverse;
+    }
+    .glitch-text::after {
+      left: -2px; text-shadow: -2px 0 blue; clip: rect(85px, 550px, 140px, 0);
+      animation: glitch-anim 2.5s infinite linear alternate-reverse;
+    }
+    @keyframes glitch-anim {
+      0% { clip: rect(10px, 9999px, 44px, 0); }
+      20% { clip: rect(85px, 9999px, 59px, 0); }
+      40% { clip: rect(14px, 9999px, 29px, 0); }
+      60% { clip: rect(66px, 9999px, 56px, 0); }
+      80% { clip: rect(98px, 9999px, 89px, 0); }
+      100% { clip: rect(43px, 9999px, 12px, 0); }
+    }
+    @keyframes glitch-anim-2 {
+      0% { clip: rect(65px, 9999px, 100px, 0); }
+      20% { clip: rect(3px, 9999px, 4px, 0); }
+      40% { clip: rect(89px, 9999px, 83px, 0); }
+      60% { clip: rect(12px, 9999px, 34px, 0); }
+      80% { clip: rect(54px, 9999px, 78px, 0); }
+      100% { clip: rect(23px, 9999px, 19px, 0); }
+    }
   </style>
 </head>
 <body>
+  <!-- React 应用的挂载点 -->
+  <div id="root"></div>
 
-  <div class="minimal-logo">
-    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M10 10L90 90M90 10L10 90" stroke="white" stroke-width="0.5"/>
-      <circle cx="50" cy="50" r="1.5" fill="white"/>
-    </svg>
-  </div>
+  <!-- 我们的主程序代码 -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-  <section class="hero-3d">
-    <div class="vignette-overlay"></div>
-    
-    <spline-viewer id="nahfiViewer" url="https://prod.spline.design/qefAA4ph1RCs2Hxm/scene.splinecode"></spline-viewer>
+    // --- 提取图标为内联 SVG (避免 GitHub Pages 找不到外部依赖) ---
+    const IconMic2 = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 8-9.04 9.06a2.828 2.828 0 1 0 3.98 3.98L16 12"/><circle cx="17" cy="7" r="5"/></svg>;
+    const IconZap = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
+    const IconTerminal = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>;
+    const IconSkull = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>;
+    const IconMap = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>;
+    const IconFlame = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>;
+    const IconChevronRight = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>;
+    const IconRadio = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="2"/><path d="M4.93 10.93a10 10 0 0 1 14.14 0"/><path d="M2 18h20"/><path d="M8.46 14.46a5 5 0 0 1 7.08 0"/></svg>;
+    const IconPlay = ({className, size=24, fill="none"}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="5 3 19 12 5 21 5 3"/></svg>;
+    const IconPause = ({className, size=24, fill="none"}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>;
+    const IconVolume2 = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>;
 
-    <div class="glass-menu">
-      <p class="text-[8px] text-gray-800 mb-10 text-center tracking-[0.8em] uppercase font-bold">Menu</p>
+    // --- 主组件逻辑 ---
+    function NahfiHipHopMuseum() {
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [activeZone, setActiveZone] = useState(null);
+      const [typingText, setTypingText] = useState('');
       
-      <button class="menu-item active" data-action="idle">Original</button>
-      <button class="menu-item" data-action="action_01">Motion</button>
-      <button class="menu-item" data-action="action_02">Secondary</button>
-      
-      <div class="mt-16 pt-8 border-t border-white/5 text-[8px] text-center text-gray-800 leading-relaxed tracking-[0.3em]">
-        L-DRAG | R-ZOOM
-      </div>
-    </div>
+      const fullWelcomeText = "Yo! 欢迎来到 nahfi.asia 中文说唱地下博物馆。我是这里的数字策展人 Nahfi。从Iron Mic的地下室到CDC的老茶馆，Keep it Real，随便逛逛吧...";
 
-    <div class="scroll-line"></div>
-  </section>
+      useEffect(() => {
+        let i = 0;
+        const typingInterval = setInterval(() => {
+          if (i < fullWelcomeText.length) {
+            setTypingText(fullWelcomeText.substring(0, i + 1));
+            i++;
+          } else {
+            clearInterval(typingInterval);
+          }
+        }, 50);
+        return () => clearInterval(typingInterval);
+      }, []);
 
-  <section id="blog" class="py-40 bg-black">
-    <div class="container mx-auto max-w-3xl px-8">
-      <div class="space-y-32">
-        <article class="opacity-40 hover:opacity-100 transition duration-1000">
-          <div class="flex items-center space-x-4 mb-4">
-            <span class="text-[9px] font-mono text-gray-700 tracking-[0.4em]">LOG_ID: 2026_03</span>
-          </div>
-          <h3 class="text-xl font-light text-white tracking-widest mb-4">Digital Density Optimization</h3>
-          <p class="text-gray-600 leading-loose text-xs tracking-wide">
-            在 V0.82 版本中，我们剥离了多余的视觉噪音。现在的重点在于如何通过最少的像素表达最丰富的数据。
-          </p>
-        </article>
-      </div>
-    </div>
-  </section>
+      const exhibitionZones = [
+        {
+          id: 'underground',
+          title: '地下启蒙 (1990s-2010)',
+          subtitle: 'Iron Mic & 隐藏',
+          icon: <IconSkull size={32} className="text-zinc-400 group-hover:text-red-500 transition-colors" />,
+          desc: '回到那个没有伴奏、只有Beatbox和麦克风的纯粹年代。探索北京胡同里的Hip-Hop启蒙。',
+          color: 'border-red-500/50 hover:border-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.4)]',
+          bgImg: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&q=80&w=600'
+        },
+        {
+          id: 'regional',
+          title: '地域割据 (2010-2017)',
+          subtitle: 'CDC / CSC / GO$H',
+          icon: <IconMap size={32} className="text-zinc-400 group-hover:text-cyan-400 transition-colors" />,
+          desc: '方言说唱的黄金年代。成都的Trap、长沙的江湖流、重庆的勒是雾都，在这里划分版图。',
+          color: 'border-cyan-500/50 hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]',
+          bgImg: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?auto=format&fit=crop&q=80&w=600'
+        },
+        {
+          id: 'mainstream',
+          title: '地上狂潮 (2017-至今)',
+          subtitle: '综艺与新浪潮',
+          icon: <IconFlame size={32} className="text-zinc-400 group-hover:text-yellow-500 transition-colors" />,
+          desc: '聚光灯亮起，金项链与百万流量。从地下走到地上，中文说唱产业的彻底爆发与多元化演变。',
+          color: 'border-yellow-500/50 hover:border-yellow-500 hover:shadow-[0_0_20px_rgba(234,179,8,0.4)]',
+          bgImg: 'https://images.unsplash.com/photo-1543808003-88ec0cce9e62?auto=format&fit=crop&q=80&w=600'
+        }
+      ];
 
-  <footer class="py-10 text-center opacity-20 hover:opacity-50 transition">
-    <p class="text-[8px] tracking-[1em] font-light">© NAHFI ASIA</p>
-  </footer>
+      return (
+        <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-red-500 selection:text-white relative overflow-hidden flex flex-col">
+          
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:32px_32px]"></div>
+          <div className="absolute inset-0 crt-overlay z-50"></div>
 
-  <script type="module">
-    const viewer = document.getElementById('nahfiViewer');
-    const buttons = document.querySelectorAll('.menu-item');
+          <header className="relative z-40 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
+            <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <IconMic2 className="text-red-500 animate-pulse" />
+                <span className="font-black text-xl tracking-tighter uppercase">NAHFI<span className="text-red-500">.ASIA</span></span>
+              </div>
+              <nav className="hidden md:flex gap-8 text-sm font-bold tracking-widest uppercase text-zinc-400">
+                <a href="#" className="hover:text-red-500 transition-colors">展览馆</a>
+                <a href="#" className="hover:text-red-500 transition-colors">厂牌地图</a>
+                <a href="#" className="hover:text-red-500 transition-colors">关于 Nahfi</a>
+              </nav>
+              <button className="md:hidden text-zinc-400">
+                <IconZap />
+              </button>
+            </div>
+          </header>
 
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        buttons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const action = btn.getAttribute('data-action');
-        // 后续可以在这里通过 viewer.emitEvent 触发 Spline 动效
-      });
-    });
+          <main className="flex-1 relative z-30 flex flex-col">
+            <div className="max-w-7xl mx-auto px-6 py-12 md:py-20 w-full">
+              <div className="mb-12 inline-block">
+                <div className="bg-zinc-900 border-2 border-zinc-700 p-4 rounded-sm flex items-start gap-4 max-w-2xl relative shadow-[8px_8px_0px_rgba(39,39,42,1)]">
+                  <div className="absolute -top-3 -left-3 w-8 h-8 bg-zinc-800 border border-zinc-600 flex items-center justify-center transform -rotate-12">
+                    <IconTerminal size={16} className="text-green-400" />
+                  </div>
+                  
+                  <div className="w-16 h-16 bg-zinc-800 rounded-sm border border-zinc-600 flex-shrink-0 overflow-hidden relative group">
+                    <div className="absolute inset-0 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
+                      🎧
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1">
+                    <div className="text-xs font-bold text-green-400 mb-1 tracking-widest uppercase flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                      Sys.Admin // NAHFI
+                    </div>
+                    <p className="font-mono text-sm leading-relaxed text-zinc-300 min-h-[60px]">
+                      {typingText}
+                      <span className="inline-block w-2 h-4 bg-green-400 ml-1 animate-pulse"></span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-16">
+                <h2 className="text-xl md:text-2xl font-bold text-zinc-500 mb-2 uppercase tracking-[0.3em]">
+                  The History of Chinese Hip-Hop
+                </h2>
+                <h1 
+                  className="text-6xl md:text-8xl font-black uppercase tracking-tighter glitch-text text-zinc-100" 
+                  data-text="中文说唱编年史"
+                >
+                  中文说唱编年史
+                </h1>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {exhibitionZones.map((zone) => (
+                  <div 
+                    key={zone.id}
+                    onMouseEnter={() => setActiveZone(zone.id)}
+                    onMouseLeave={() => setActiveZone(null)}
+                    className={`group relative h-96 bg-zinc-900 border-2 ${zone.color} rounded-sm overflow-hidden cursor-pointer transition-all duration-300`}
+                  >
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center opacity-20 group-hover:opacity-40 transition-opacity duration-500 grayscale group-hover:grayscale-0"
+                      style={{ backgroundImage: `url(${zone.bgImg})` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
+                    
+                    <div className="absolute top-4 right-4 text-zinc-800 text-6xl font-black opacity-30 group-hover:opacity-10 transition-opacity">
+                      0{exhibitionZones.indexOf(zone) + 1}
+                    </div>
+
+                    <div className="absolute inset-0 p-6 flex flex-col justify-end">
+                      <div className="mb-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                        {zone.icon}
+                      </div>
+                      <h3 className="text-zinc-400 text-sm font-bold uppercase tracking-widest mb-1">{zone.subtitle}</h3>
+                      <h2 className="text-2xl font-black mb-3">{zone.title}</h2>
+                      
+                      <div className="h-0 opacity-0 group-hover:h-auto group-hover:opacity-100 group-hover:mt-2 overflow-hidden transition-all duration-300">
+                        <p className="text-zinc-400 text-sm leading-relaxed mb-4">
+                          {zone.desc}
+                        </p>
+                        <button className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white bg-zinc-800 hover:bg-zinc-700 px-4 py-2 border border-zinc-600 transition-colors">
+                          进入街区 <IconChevronRight size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </main>
+
+          <footer className="relative z-50 border-t border-zinc-800 bg-zinc-950 p-4">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+              
+              <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className={`w-12 h-12 rounded-full bg-zinc-900 border-2 border-zinc-700 flex items-center justify-center ${isPlaying ? 'animate-[spin_3s_linear_infinite]' : ''}`}>
+                  <div className="w-4 h-4 rounded-full bg-zinc-950 border border-red-500"></div>
+                </div>
+                <div>
+                  <div className="text-xs text-red-500 font-bold tracking-widest uppercase flex items-center gap-2 mb-1">
+                    Now Playing {isPlaying && <IconRadio size={12} className="animate-pulse" />}
+                  </div>
+                  <div className="font-mono text-sm text-zinc-300">隐藏 (Yin Ts'ang) - 在北京</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6">
+                <button 
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="w-12 h-12 bg-red-600 hover:bg-red-500 rounded-sm flex items-center justify-center text-white transition-colors border-2 border-red-800 hover:shadow-[0_0_15px_rgba(220,38,38,0.5)]"
+                >
+                  {isPlaying ? <IconPause size={20} fill="currentColor" /> : <IconPlay size={20} fill="currentColor" className="ml-1" />}
+                </button>
+                
+                <div className="hidden md:flex flex-col gap-1 w-32">
+                  <div className="flex justify-between items-center text-[10px] text-zinc-500 font-mono">
+                    <span>VOL</span>
+                    <IconVolume2 size={12} />
+                  </div>
+                  <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="h-full w-2/3 bg-zinc-500"></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // 将 React 渲染挂载到 DOM
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<NahfiHipHopMuseum />);
   </script>
-
 </body>
 </html>
 
