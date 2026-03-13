@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NAHFI.ASIA - 中文说唱地下博物馆 (全息地图版)</title>
+  <title>NAHFI.ASIA - 中文说唱地下博物馆 (3D全息地球版)</title>
   
   <!-- 引入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -15,28 +15,19 @@
   <!-- 引入 Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+  <!-- 💡 引入 3D 渲染核心库 Three.js 与 Globe.gl -->
+  <!-- 修复了 ReferenceError: exports is not defined，使用了具体的 build 路径 -->
+  <script src="https://unpkg.com/three/build/three.min.js"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
+
   <style>
-    body { margin: 0; background-color: #09090b; overflow: hidden; }
+    body { margin: 0; background-color: #09090b; overflow: hidden; font-family: sans-serif; }
     /* 扫描线与噪点遮罩 */
     .crt-overlay {
       background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
       background-size: 100% 4px, 6px 100%;
       pointer-events: none;
       z-index: 50;
-    }
-    /* 雷达扫描动画 */
-    @keyframes radar-spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    .radar-sweep {
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 200%; height: 200%;
-      background: conic-gradient(from 0deg, transparent 70%, rgba(239, 68, 68, 0.1) 100%);
-      transform-origin: 0 0;
-      animation: radar-spin 10s linear infinite;
-      pointer-events: none;
     }
     /* 故障文字特效 */
     .glitch-text { position: relative; }
@@ -72,13 +63,16 @@
     /* 隐藏滚动条 */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* 确保地球上方的 HTML 元素可以被点击 */
+    .scene-container .scene-tooltip { pointer-events: auto !important; }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef } = React;
 
     // --- 图标组件 ---
     const IconMic2 = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 8-9.04 9.06a2.828 2.828 0 1 0 3.98 3.98L16 12"/><circle cx="17" cy="7" r="5"/></svg>;
@@ -90,80 +84,62 @@
     const IconUser = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
     const IconMusic = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
     const IconMapPin = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+    const IconGlobe = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>;
 
     // ==========================================
     // 💡 后期维护指南：在这里添加/修改城市点位
-    // x 和 y 是基于地图容器的百分比坐标 (0-100)
-    // 左上角为 x:0, y:0
+    // 使用真实的纬度 (lat) 和经度 (lng) 来在地球上定位！
     // ==========================================
     const CITIES_DATA = [
       {
-        id: 'cdc',
-        name: '成都',
-        label: 'CDC',
-        x: 40, y: 65,  // 修改百分比调整位置
-        color: 'text-cyan-400',
-        bgColor: 'bg-cyan-400',
+        id: 'cdc', name: '成都', label: 'CDC',
+        lat: 30.6586, lng: 104.0648,  // 真实经纬度
+        color: 'text-cyan-400', bgColor: 'bg-cyan-400', hexColor: '#22d3ee',
         glow: 'shadow-[0_0_20px_rgba(34,211,238,0.8)]',
         style: 'Trap / 休闲与凶狠的结合',
         desc: '作为中文Trap的绝对重镇，成都的嘻哈音乐完美融合了市井的茶馆文化和国际化的808鼓点。这里的Rapper操着极具辨识度的西南官话，看似慵懒随性，但做出来的Beat和Flow却极具攻击性与前瞻性。',
         rappers: ['Higher Brothers (马思唯, KnowKnow...)', '谢帝 (Boss Shady)', 'Ty.', '王以太', '李尔新']
       },
       {
-        id: 'gosh',
-        name: '重庆',
-        label: 'GO$H',
-        x: 48, y: 68,
-        color: 'text-red-500',
-        bgColor: 'bg-red-500',
+        id: 'gosh', name: '重庆', label: 'GO$H',
+        lat: 29.5630, lng: 106.5516,
+        color: 'text-red-500', bgColor: 'bg-red-500', hexColor: '#ef4444',
         glow: 'shadow-[0_0_20px_rgba(239,68,68,0.8)]',
         style: 'Trap / 勒是雾都的江湖气',
         desc: '重庆是一座赛博朋克与魔幻现实交织的3D城市，这里的说唱充满了山城防空洞里的粗粝感与市井兄弟情。方言的声调让重庆Trap拥有独特的咬字节奏，现场永远是最躁的。',
         rappers: ['GAI周延', 'Bridge布瑞吉', 'L4WUDU (雾都)', '王齐铭', 'K Eleven']
       },
       {
-        id: 'csc',
-        name: '长沙',
-        label: 'CSC',
-        x: 62, y: 72,
-        color: 'text-orange-500',
-        bgColor: 'bg-orange-500',
+        id: 'csc', name: '长沙', label: 'CSC',
+        lat: 28.2282, lng: 112.9388,
+        color: 'text-orange-500', bgColor: 'bg-orange-500', hexColor: '#f97316',
         glow: 'shadow-[0_0_20px_rgba(249,115,22,0.8)]',
         style: 'Boombap / 江湖流与湘江词魂',
         desc: 'CSC代表着中文说唱歌词的灵魂深度。长沙说唱扎根于街头，以硬核的BoomBap风格为主，歌词如同湘菜一样火辣直接，讲述着底层的奋斗、兄弟情义和真正的“江湖流”。',
         rappers: ['C-Block (大傻, 功夫胖, 刘聪)', '西奥Sio', 'Ranzer', 'Yee']
       },
       {
-        id: 'beijing',
-        name: '北京',
-        label: 'BJ Underground',
-        x: 68, y: 35,
-        color: 'text-yellow-400',
-        bgColor: 'bg-yellow-400',
+        id: 'beijing', name: '北京', label: 'BJ Underground',
+        lat: 39.9042, lng: 116.4074,
+        color: 'text-yellow-400', bgColor: 'bg-yellow-400', hexColor: '#facc15',
         glow: 'shadow-[0_0_20px_rgba(250,204,21,0.8)]',
         style: 'Old School / 地下启蒙与叙事',
         desc: '作为中文说唱的发源地之一，北京的Hip-Hop带着深深的地下皇城根底色。从Iron Mic的地下室到各大Livehouse，这里的说唱更注重叙事、双关语和纯正的Old School味道。',
         rappers: ['隐藏 (Yin Ts\'ang)', '王波 (Webber)', '龙井说唱', '阴三儿 (In3)', '辉子']
       },
       {
-        id: 'nanjing',
-        name: '南京',
-        label: 'Free-Out',
-        x: 75, y: 58,
-        color: 'text-purple-500',
-        bgColor: 'bg-purple-500',
+        id: 'nanjing', name: '南京', label: 'Free-Out',
+        lat: 32.0603, lng: 118.7969,
+        color: 'text-purple-500', bgColor: 'bg-purple-500', hexColor: '#a855f7',
         glow: 'shadow-[0_0_20px_rgba(168,85,247,0.8)]',
         style: 'Boombap & Melodic / 诗意与凶狠',
         desc: '金陵城的说唱带着一种独特的文学质感与硬核态度的碰撞。Free-Out厂牌不仅保留了街头的一面，也在旋律说唱和意识流词作上独树一帜。',
         rappers: ['光光 (MC 光光)', 'Ice Paper', 'Round_2', 'Trouble.Z']
       },
       {
-        id: 'xian',
-        name: '西安',
-        label: 'NOUS',
-        x: 55, y: 45,
-        color: 'text-emerald-400',
-        bgColor: 'bg-emerald-400',
+        id: 'xian', name: '西安', label: 'NOUS',
+        lat: 34.3416, lng: 108.9398,
+        color: 'text-emerald-400', bgColor: 'bg-emerald-400', hexColor: '#34d399',
         glow: 'shadow-[0_0_20px_rgba(52,211,153,0.8)]',
         style: 'Conscious / 思想与技巧的巅峰',
         desc: '十三朝古都孕育了中文说唱圈最顶尖的技术流和思想派。NOUS厂牌以极其复杂的韵脚编排、深刻的社会反思和纯正的Hip-Hop精神，被誉为中文说唱的“少林寺”。',
@@ -171,13 +147,113 @@
       }
     ];
 
+    // 城市间的网络弧线数据 (模拟厂牌间的连结与碰撞)
+    const ARCS_DATA = [
+      { startLat: 30.6586, startLng: 104.0648, endLat: 29.5630, endLng: 106.5516 }, // 成都 - 重庆
+      { startLat: 28.2282, startLng: 112.9388, endLat: 30.6586, endLng: 104.0648 }, // 长沙 - 成都
+      { startLat: 39.9042, startLng: 116.4074, endLat: 34.3416, endLng: 108.9398 }, // 北京 - 西安
+      { startLat: 32.0603, startLng: 118.7969, endLat: 28.2282, endLng: 112.9388 }, // 南京 - 长沙
+      { startLat: 34.3416, startLng: 108.9398, endLat: 30.6586, endLng: 104.0648 }  // 西安 - 成都
+    ];
+
     // ==========================================
     // 主应用组件
     // ==========================================
     function NahfiHipHopMuseum() {
+      const globeElRef = useRef(null);
+      const globeInstanceRef = useRef(null);
+      
       const [isPlaying, setIsPlaying] = useState(false);
       const [activeCity, setActiveCity] = useState(null);
-      const [hoveredCity, setHoveredCity] = useState(null);
+
+      // --- 核心：初始化 3D 地球 ---
+      useEffect(() => {
+        if (!globeElRef.current) return;
+
+        // 创建 Globe 实例
+        const globe = Globe()(globeElRef.current)
+          .backgroundColor('rgba(0,0,0,0)') // 透明背景以显示底层网格
+          .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg') // 黑色质感地球地图
+          .showAtmosphere(true)
+          .atmosphereColor('#22d3ee') // 青色大气层发光
+          .atmosphereAltitude(0.2)
+          .pointOfView({ lat: 35, lng: 105, altitude: 1.5 }) // 初始视角聚焦中国区域
+          
+          // 渲染厂牌之间的流光弧线
+          .arcsData(ARCS_DATA)
+          .arcColor(() => '#ef4444') // 红色电波
+          .arcDashLength(0.4)
+          .arcDashGap(4)
+          .arcDashInitialGap(() => Math.random() * 5)
+          .arcDashAnimateTime(2000)
+          .arcAltitudeAutoScale(0.3)
+
+          // 渲染城市交互节点 (注入我们之前的 Tailwind CSS HTML 元素)
+          .htmlElementsData(CITIES_DATA)
+          .htmlElement(d => {
+            const el = document.createElement('div');
+            // 将点位锚点居中
+            el.style.transform = "translate(-50%, -50%)"; 
+            el.style.pointerEvents = "auto";
+            el.style.cursor = "pointer";
+            
+            // 沿用之前的炫酷呼吸灯和文字 HTML
+            el.innerHTML = `
+              <div class="relative group flex flex-col items-center">
+                <div class="absolute -inset-4 rounded-full opacity-0 group-hover:opacity-40 transition-opacity duration-300 blur-md ${d.bgColor}"></div>
+                <div class="absolute inset-0 rounded-full animate-ping opacity-50 ${d.bgColor}"></div>
+                <div class="w-4 h-4 md:w-5 md:h-5 rounded-full border-2 border-zinc-900 relative z-10 transition-transform duration-300 ${d.bgColor} ${d.glow} group-hover:scale-150"></div>
+                <div class="absolute top-full mt-2 flex flex-col items-center opacity-80 group-hover:opacity-100 transition-all duration-300">
+                  <div class="px-2 py-1 bg-zinc-900/80 backdrop-blur-md border border-zinc-700 text-zinc-300 text-[10px] md:text-xs font-bold uppercase tracking-widest whitespace-nowrap shadow-lg">
+                    ${d.label}
+                  </div>
+                </div>
+              </div>
+            `;
+            
+            // 绑定点击事件，由于在闭包内，直接调用 React 的 setter 是安全的
+            el.onclick = () => setActiveCity(d);
+            return el;
+          });
+
+        // 开启自动旋转
+        globe.controls().autoRotate = true;
+        globe.controls().autoRotateSpeed = 0.5;
+        // 限制缩放距离
+        globe.controls().minDistance = 150;
+        globe.controls().maxDistance = 500;
+
+        globeInstanceRef.current = globe;
+
+        // 监听窗口大小改变以重绘地球
+        const handleResize = () => {
+          if(globeElRef.current && globeInstanceRef.current) {
+            globeInstanceRef.current.width(globeElRef.current.clientWidth);
+            globeInstanceRef.current.height(globeElRef.current.clientHeight);
+          }
+        };
+        window.addEventListener('resize', handleResize);
+        
+        return () => window.removeEventListener('resize', handleResize);
+      }, []); // 空依赖，只挂载一次
+
+      // --- 视角控制：当选中城市时，转动并拉近镜头 ---
+      useEffect(() => {
+        if (globeInstanceRef.current) {
+          if (activeCity) {
+            // 停止自动旋转并飞向对应城市
+            globeInstanceRef.current.controls().autoRotate = false;
+            globeInstanceRef.current.pointOfView(
+              { lat: activeCity.lat, lng: activeCity.lng, altitude: 0.6 }, 
+              1500 // 飞行动画时间 1.5 秒
+            );
+          } else {
+            // 恢复全局视角和自动旋转
+            globeInstanceRef.current.controls().autoRotate = true;
+            globeInstanceRef.current.pointOfView({ lat: 35, lng: 105, altitude: 1.5 }, 1500);
+          }
+        }
+      }, [activeCity]);
 
       // 关闭面板
       const closePanel = () => setActiveCity(null);
@@ -201,99 +277,30 @@
                   SYSTEM_STATUS: ONLINE
                 </span>
               </div>
-              <div className="text-xs font-bold tracking-[0.3em] uppercase text-zinc-400">
-                中国嘻哈地理全息图
+              <div className="text-xs font-bold tracking-[0.3em] uppercase text-zinc-400 hidden sm:block">
+                3D 全息说唱地理视图
               </div>
             </div>
           </header>
 
-          {/* --- 核心互动地图区域 --- */}
-          <main className="flex-1 relative z-10 w-full h-full flex items-center justify-center overflow-hidden pt-16 pb-20">
+          {/* --- 核心交互区域：容纳 3D 地球 --- */}
+          <main className="flex-1 relative z-10 w-full h-full overflow-hidden">
             
-            {/* 地图背景容器 (控制长宽比和全息效果) */}
-            <div className="relative w-[95%] max-w-6xl aspect-[4/3] md:aspect-[16/9] border border-zinc-800/50 rounded-2xl bg-zinc-900/20 backdrop-blur-sm overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] inset-0">
-              
-              {/* 雷达扫描动画 */}
-              <div className="radar-sweep"></div>
-              
-              {/* 装饰性数字地图轮廓 (使用虚线构成抽象的中国版图感) */}
-              <div className="absolute inset-0 opacity-20 pointer-events-none flex items-center justify-center">
-                <svg viewBox="0 0 1000 800" className="w-full h-full drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-                  <path 
-                    d="M 850 300 C 800 200, 600 150, 500 200 C 400 250, 300 200, 200 300 C 100 400, 200 600, 400 700 C 600 800, 800 600, 850 500 Z" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeDasharray="10 10" 
-                    className="text-zinc-600"
-                  />
-                  {/* 经纬网格线 */}
-                  <line x1="10%" y1="0" x2="10%" y2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                  <line x1="30%" y1="0" x2="30%" y2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                  <line x1="50%" y1="0" x2="50%" y2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                  <line x1="70%" y1="0" x2="70%" y2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                  <line x1="90%" y1="0" x2="90%" y2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                  <line y1="20%" x1="0" y2="20%" x2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                  <line y1="40%" x1="0" y2="40%" x2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                  <line y1="60%" x1="0" y2="60%" x2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                  <line y1="80%" x1="0" y2="80%" x2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                </svg>
-              </div>
+            {/* Globe 容器：铺满整个区域 */}
+            <div ref={globeElRef} className="absolute inset-0 w-full h-full cursor-move active:cursor-grabbing"></div>
 
-              {/* 中心文字背景 (未选择城市时显示) */}
-              {!activeCity && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20">
-                  <h1 className="text-6xl md:text-9xl font-black uppercase tracking-tighter text-zinc-500">
-                    HIP-HOP
-                  </h1>
-                  <h2 className="text-4xl md:text-7xl font-bold uppercase tracking-[0.5em] text-zinc-600 mt-2">
-                    MAP
-                  </h2>
-                </div>
-              )}
-
-              {/* ========================================== */}
-              {/* 渲染城市点位 */}
-              {/* ========================================== */}
-              {CITIES_DATA.map((city) => (
-                <div 
-                  key={city.id}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20 cursor-pointer group"
-                  style={{ left: `${city.x}%`, top: `${city.y}%` }}
-                  onMouseEnter={() => setHoveredCity(city)}
-                  onMouseLeave={() => setHoveredCity(null)}
-                  onClick={() => setActiveCity(city)}
-                >
-                  {/* 点位外圈的光晕特效 */}
-                  <div className={`absolute -inset-4 rounded-full opacity-0 group-hover:opacity-40 transition-opacity duration-300 blur-md ${city.bgColor}`}></div>
-                  
-                  {/* 呼吸扩大的外环 (代表电波/影响范围) */}
-                  <div className={`absolute inset-0 rounded-full animate-ping opacity-30 ${city.bgColor}`}></div>
-                  
-                  {/* 核心发光点 */}
-                  <div className={`w-4 h-4 md:w-5 md:h-5 rounded-full border-2 border-zinc-900 relative z-10 transition-transform duration-300 ${city.bgColor} ${city.glow} ${activeCity?.id === city.id || hoveredCity?.id === city.id ? 'scale-150' : 'scale-100'}`}>
-                  </div>
-
-                  {/* 城市标签 (悬浮或选中时显示) */}
-                  <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-3 flex flex-col items-center transition-all duration-300 ${activeCity?.id === city.id || hoveredCity?.id === city.id ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
-                    <div className={`px-3 py-1 bg-zinc-900 border ${activeCity?.id === city.id ? 'border-white text-white' : 'border-zinc-700 text-zinc-300'} text-xs font-bold uppercase tracking-widest whitespace-nowrap shadow-lg`}>
-                      {city.label}
-                    </div>
-                    <div className={`text-[10px] mt-1 font-mono tracking-widest ${city.color}`}>
-                      {city.name}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* 提示文案 */}
+            {/* 提示文案层 (在没有点击任何城市时悬浮显示) */}
             {!activeCity && (
-              <div className="absolute bottom-28 left-1/2 -translate-x-1/2 text-zinc-500 text-sm font-mono tracking-widest animate-pulse pointer-events-none flex items-center gap-2">
-                <IconMapPin size={16} /> 点击节点解密当地厂牌档案
+              <div className="absolute bottom-28 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none">
+                <div className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-zinc-800 opacity-50 mb-4 drop-shadow-md">
+                  HIP-HOP GLOBE
+                </div>
+                <div className="text-zinc-400 text-sm font-mono tracking-widest animate-pulse flex items-center gap-2 bg-zinc-900/80 px-4 py-2 rounded-full border border-zinc-800 backdrop-blur-sm shadow-xl">
+                  <IconGlobe size={16} className="text-cyan-400" />
+                  拖动地球 · 点击节点解密当地厂牌
+                </div>
               </div>
             )}
-
           </main>
 
           {/* ========================================== */}
@@ -304,11 +311,11 @@
             {activeCity && (
               <>
                 {/* 顶部标题栏 */}
-                <div className="p-6 border-b border-zinc-800 flex justify-between items-start">
+                <div className="p-6 pt-24 md:pt-6 border-b border-zinc-800 flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2 text-xs font-mono mb-2">
                       <span className={`w-2 h-2 rounded-full animate-pulse ${activeCity.bgColor}`}></span>
-                      <span className={activeCity.color}>DATA_LOADED // NODE: {activeCity.x}_{activeCity.y}</span>
+                      <span className={activeCity.color}>DATA_LOADED // LOC: {activeCity.lat.toFixed(2)}, {activeCity.lng.toFixed(2)}</span>
                     </div>
                     <h2 className={`text-4xl font-black uppercase tracking-tighter ${activeCity.color} drop-shadow-[0_0_10px_currentColor]`}>
                       {activeCity.label}
@@ -317,7 +324,7 @@
                   </div>
                   <button 
                     onClick={closePanel}
-                    className="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-sm border border-zinc-700 transition-colors"
+                    className="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-sm border border-zinc-700 transition-colors shadow-lg"
                   >
                     <IconX size={20} />
                   </button>
@@ -360,13 +367,12 @@
                 {/* 底部装饰 */}
                 <div className="p-6 border-t border-zinc-800 bg-zinc-900/50">
                   <button className={`w-full py-3 text-sm font-bold uppercase tracking-widest text-zinc-900 transition-all duration-300 shadow-lg ${activeCity.bgColor} hover:opacity-80`}>
-                    播放城市歌单
+                    接入城市频段
                   </button>
                 </div>
               </>
             )}
           </div>
-
 
           {/* --- 底部复古音乐播放器 --- */}
           <footer className="absolute bottom-0 w-full z-40 border-t border-zinc-800 bg-zinc-950/80 backdrop-blur-md p-4">
@@ -380,8 +386,8 @@
                   <div className="text-[10px] text-red-500 font-bold tracking-widest uppercase flex items-center gap-2 mb-1">
                     Global Broadcast {isPlaying && <IconRadio size={10} className="animate-pulse" />}
                   </div>
-                  <div className="font-mono text-sm text-zinc-300">
-                    {activeCity ? `正在播放: ${activeCity.label} Cipher` : "等待接入城市信号..."}
+                  <div className="font-mono text-sm text-zinc-300 truncate max-w-[200px] md:max-w-full">
+                    {activeCity ? `信号同步: ${activeCity.label} Cipher` : "等待接入空间站信号..."}
                   </div>
                 </div>
               </div>
@@ -389,7 +395,7 @@
               <div className="flex items-center gap-6">
                 <button 
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className="w-10 h-10 bg-red-600 hover:bg-red-500 rounded-sm flex items-center justify-center text-white transition-colors border-2 border-red-800 hover:shadow-[0_0_15px_rgba(220,38,38,0.5)]"
+                  className="w-10 h-10 bg-red-600 hover:bg-red-500 rounded-sm flex items-center justify-center text-white transition-colors border-2 border-red-800 hover:shadow-[0_0_15px_rgba(220,38,38,0.5)] shrink-0"
                 >
                   {isPlaying ? <IconPause size={16} fill="currentColor" /> : <IconPlay size={16} fill="currentColor" className="ml-0.5" />}
                 </button>
@@ -417,6 +423,7 @@
   </script>
 </body>
 </html>
+
 
 
 
