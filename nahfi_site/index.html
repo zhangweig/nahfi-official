@@ -1,233 +1,423 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NAHFI.ASIA - ASTRAL TERMINAL</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NAHFI.ASIA - ASTRAL TERMINAL (B&W)</title>
+  
+  <!-- 引入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 引入 React 和 ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  
+  <!-- 引入 Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-<script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入 3D 渲染核心库 Three.js 与 Globe.gl -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
 
-<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- 引入等宽字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&display=swap" rel="stylesheet">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://unpkg.com/globe.gl"></script>
+  <style>
+    body { margin: 0; background-color: #000; overflow: hidden; font-family: 'JetBrains Mono', monospace; color: #fff; }
+    
+    /* 模拟图2那种暗黑色、带有一点揉皱/噪点质感的背景 */
+    .grunge-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1;
+      mix-blend-mode: screen;
+    }
 
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    /* 极细微的扫描线，黑白灰质感 */
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+      background-size: 100% 4px;
+      pointer-events: none;
+      z-index: 50;
+    }
 
-<style>
-body{
-margin:0;
-background:#000;
-overflow:hidden;
-font-family:'JetBrains Mono',monospace;
-color:#fff;
-}
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .scene-container .scene-tooltip { pointer-events: auto !important; }
 
-.scanlines{
-position:absolute;
-inset:0;
-background:linear-gradient(to bottom,
-rgba(255,255,255,0) 50%,
-rgba(0,0,0,0.25) 50%);
-background-size:100% 4px;
-pointer-events:none;
-z-index:50;
-}
-</style>
+    /* 黑白 UI 边框 */
+    .bw-border { border: 1px solid rgba(255, 255, 255, 0.3); }
+    .bw-border-b { border-bottom: 1px solid rgba(255, 255, 255, 0.3); }
+  </style>
 </head>
-
 <body>
-<div id="root"></div>
+  <div id="root"></div>
 
-<script type="text/babel">
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
 
-const {useEffect,useRef,useState}=React;
+    // --- 极简黑白图标 ---
+    const IconX = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="square"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+    const IconPlay = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><polygon points="7 4 19 12 7 20 7 4"/></svg>;
+    const IconPause = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>;
+    const IconCrosshair = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>;
 
-const CITIES_DATA=[
+    // 城市数据（去掉所有彩色配置，仅保留数据）
+    const CITIES_DATA = [
+      { id: 'cdc', name: '成都', label: 'CDC', lat: 30.6586, lng: 104.0648, style: 'Trap / 休闲与凶狠', desc: '作为中文Trap的绝对重镇，成都的嘻哈音乐完美融合了市井的茶馆文化和国际化的808鼓点。', rappers: ['Higher Brothers', '谢帝', 'Ty.', '王以太', '李尔新'] },
+      { id: 'gosh', name: '重庆', label: 'GO$H', lat: 29.5630, lng: 106.5516, style: 'Trap / 勒是雾都的江湖气', desc: '重庆是一座赛博朋克与魔幻现实交织的3D城市，这里的说唱充满了山城防空洞里的粗粝感与市井兄弟情。', rappers: ['GAI周延', 'Bridge布瑞吉', 'L4WUDU', '王齐铭'] },
+      { id: 'csc', name: '长沙', label: 'CSC', lat: 28.2282, lng: 112.9388, style: 'Boombap / 江湖流与湘江词魂', desc: 'CSC代表着中文说唱歌词的灵魂深度。长沙说唱扎根于街头，以硬核的BoomBap风格为主。', rappers: ['C-Block', '西奥Sio', 'Ranzer', 'Yee'] },
+      { id: 'beijing', name: '北京', label: 'BJ Underground', lat: 39.9042, lng: 116.4074, style: 'Old School / 地下启蒙与叙事', desc: '作为中文说唱的发源地之一，北京的Hip-Hop带着深深的地下皇城根底色，更注重叙事和双关语。', rappers: ['隐藏', '王波', '龙井说唱', '阴三儿', '辉子'] },
+      { id: 'nanjing', name: '南京', label: 'Free-Out', lat: 32.0603, lng: 118.7969, style: 'Boombap & Melodic / 诗意与凶狠', desc: '金陵城的说唱带着一种独特的文学质感与硬核态度的碰撞，在旋律和意识流上独树一帜。', rappers: ['光光', 'Ice Paper', 'Round_2', 'Trouble.Z'] },
+      { id: 'xian', name: '西安', label: 'NOUS', lat: 34.3416, lng: 108.9398, style: 'Conscious / 思想与技巧的巅峰', desc: '十三朝古都孕育了中文说唱圈最顶尖的技术流和思想派，被誉为中文说唱的“少林寺”。', rappers: ['派克特', 'Cream D', '辛巴', '张昊'] }
+    ];
 
-{
-id:'cdc',
-name:'成都',
-label:'CDC',
-lat:30.6586,
-lng:104.0648
-},
+    const ARCS_DATA = [
+      { startLat: 30.6586, startLng: 104.0648, endLat: 29.5630, endLng: 106.5516 }, 
+      { startLat: 28.2282, startLng: 112.9388, endLat: 30.6586, endLng: 104.0648 }, 
+      { startLat: 39.9042, startLng: 116.4074, endLat: 34.3416, endLng: 108.9398 }, 
+      { startLat: 32.0603, startLng: 118.7969, endLat: 28.2282, endLng: 112.9388 }, 
+      { startLat: 34.3416, startLng: 108.9398, endLat: 30.6586, endLng: 104.0648 }  
+    ];
 
-{
-id:'gosh',
-name:'重庆',
-label:'GO$H',
-lat:29.5630,
-lng:106.5516
-},
+    // 生成经纬度文本标签
+    const LABELS_DATA = [];
+    for (let lat = -60; lat <= 60; lat += 20) {
+      for (let lng = -180; lng <= 180; lng += 30) {
+        if (lat === 0 && lng === 0) continue; 
+        LABELS_DATA.push({
+          lat, lng,
+          text: `${Math.abs(lat)}°${lat >= 0 ? 'N' : 'S'} ${Math.abs(lng)}°${lng >= 0 ? 'E' : 'W'}`
+        });
+      }
+    }
 
-{
-id:'csc',
-name:'长沙',
-label:'CSC',
-lat:28.2282,
-lng:112.9388
-},
+    function NahfiHipHopMuseum() {
+      const globeElRef = useRef(null);
+      const globeInstanceRef = useRef(null);
+      
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [activeCity, setActiveCity] = useState(null);
 
-{
-id:'beijing',
-name:'北京',
-label:'BJ',
-lat:39.9042,
-lng:116.4074
-},
+      useEffect(() => {
+        if (!globeElRef.current) return;
 
-{
-id:'xian',
-name:'西安',
-label:'NOUS',
-lat:34.3416,
-lng:108.9398
-},
+        // ==========================================
+        // 核心配置：完全暗黑化与线框化的地球
+        // ==========================================
+        const globe = Globe()(globeElRef.current)
+          .backgroundColor('rgba(0,0,0,0)')
+          // 去除图片，使用纯黑球体，仅显示经纬度网格线
+          .showGlobe(true)
+          .globeMaterial(new THREE.MeshBasicMaterial({ color: 0x000000 })) // 纯黑不反光的球体底色
+          .showAtmosphere(true)
+          .atmosphereColor('#ffffff') // 微弱的白光边缘
+          .atmosphereAltitude(0.1)
+          
+          .showGraticules(true) // 核心：显示经纬度网格，构成主视效
+          .pointOfView({ lat: 35, lng: 105, altitude: 1.8 }) 
+          
+          // 行政区划处理：完全透明填充，仅留极细的白色边框
+          .polygonCapColor(() => 'rgba(0,0,0,0)') 
+          .polygonSideColor(() => 'rgba(0,0,0,0)') 
+          .polygonStrokeColor(() => 'rgba(255, 255, 255, 0.15)') // 微弱的白线
+          
+          // 连线处理：也是白色/灰色系
+          .arcsData(ARCS_DATA)
+          .arcColor(() => '#ffffff') 
+          .arcDashLength(0.4)
+          .arcDashGap(4)
+          .arcDashInitialGap(() => Math.random() * 5)
+          .arcDashAnimateTime(3000)
+          .arcAltitudeAutoScale(0.3)
 
-{
-id:'nanjing',
-name:'南京',
-label:'Free-Out',
-lat:32.0603,
-lng:118.7969
-},
+          // 隐约的经纬度数字
+          .labelsData(LABELS_DATA)
+          .labelText('text')
+          .labelSize(0.5)
+          .labelDotRadius(0.1)
+          .labelColor(() => 'rgba(255, 255, 255, 0.3)') // 隐约的灰色数字
+          .labelResolution(2)
+          .labelAltitude(0.01)
 
-{
-id:'urumqi',
-name:'乌鲁木齐',
-label:'XJ',
-lat:43.8256,
-lng:87.6168
-}
+          // ==========================================
+          // 城市节点：极简的黑白小方块，无夸张发光
+          // ==========================================
+          .htmlElementsData(CITIES_DATA)
+          .htmlElement(d => {
+            const el = document.createElement('div');
+            el.style.transform = "translate(-50%, -50%)"; 
+            el.style.pointerEvents = "auto";
+            el.style.cursor = "crosshair";
+            
+            el.innerHTML = `
+              <div class="relative group flex flex-col items-center">
+                <!-- 极简白色小方块 -->
+                <div class="w-1.5 h-1.5 bg-white border border-black group-hover:bg-black group-hover:border-white transition-colors z-10"></div>
+                <!-- 悬浮时显示的标签，黑底白字 -->
+                <div class="absolute top-full mt-1.5 hidden group-hover:flex flex-col items-center z-20">
+                  <div class="px-1.5 py-0.5 bg-black border border-white/50 text-white text-[9px] font-bold uppercase tracking-widest whitespace-nowrap">
+                    [+] ${d.label}
+                  </div>
+                </div>
+              </div>
+            `;
+            el.onclick = () => setActiveCity(d);
+            return el;
+          });
 
-]
+        fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
+          .then(res => res.json())
+          .then(countries => globe.polygonsData(countries.features));
 
-const ARCS_DATA=[
+        const scene = globe.scene();
+        
+        // ==========================================
+        // 背景追加 3D 元素 (参照图1和图2)
+        // ==========================================
+        const extraGroup = new THREE.Group();
 
-{startLat:30.6586,startLng:104.0648,endLat:29.5630,endLng:106.5516},
-{startLat:28.2282,startLng:112.9388,endLat:30.6586,endLng:104.0648},
-{startLat:39.9042,startLng:116.4074,endLat:34.3416,endLng:108.9398},
-{startLat:32.0603,startLng:118.7969,endLat:28.2282,endLng:112.9388},
+        // 1. 底部的巨大极坐标网格 (Polar Grid)，模拟图1的深渊辐射感
+        const polarGrid = new THREE.PolarGridHelper(300, 32, 32, 64, 0xffffff, 0xffffff);
+        polarGrid.material.transparent = true;
+        polarGrid.material.opacity = 0.08;
+        polarGrid.position.set(0, -80, -50);
+        polarGrid.rotation.x = Math.PI / 8; // 稍微倾斜
+        extraGroup.add(polarGrid);
 
-{startLat:43.8256,startLng:87.6168,endLat:30.6586,endLng:104.0648}
+        // 2. 背景悬浮的线框几何体 (模拟图2左侧悬浮的线框球和网格)
+        const geoSphere = new THREE.IcosahedronGeometry(25, 2);
+        const matWire = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
+        const meshSphere = new THREE.LineSegments(new THREE.EdgesGeometry(geoSphere), matWire);
+        meshSphere.position.set(-120, 60, -100);
+        extraGroup.add(meshSphere);
 
-]
+        const geoTorus = new THREE.TorusGeometry(30, 8, 8, 24);
+        const meshTorus = new THREE.LineSegments(new THREE.EdgesGeometry(geoTorus), matWire);
+        meshTorus.position.set(130, -40, -120);
+        extraGroup.add(meshTorus);
 
-function App(){
+        scene.add(extraGroup);
 
-const globeRef=useRef()
+        // 动画循环
+        let animationFrameId;
+        const animate = () => {
+            polarGrid.rotation.y -= 0.0002;
+            meshSphere.rotation.x += 0.001;
+            meshSphere.rotation.y += 0.002;
+            meshTorus.rotation.x -= 0.001;
+            meshTorus.rotation.y -= 0.001;
+            animationFrameId = requestAnimationFrame(animate);
+        };
+        animate();
 
-useEffect(()=>{
+        // 控制器
+        globe.controls().autoRotate = true;
+        globe.controls().autoRotateSpeed = 0.3; // 缓慢转动
+        globe.controls().minDistance = 120;
+        globe.controls().maxDistance = 600;
 
-const globe=Globe()(globeRef.current)
+        globeInstanceRef.current = globe;
 
-.backgroundColor('rgba(0,0,0,0)')
+        const handleResize = () => {
+          if(globeElRef.current && globeInstanceRef.current) {
+            globeInstanceRef.current.width(globeElRef.current.clientWidth);
+            globeInstanceRef.current.height(globeElRef.current.clientHeight);
+          }
+        };
+        window.addEventListener('resize', handleResize);
+        
+        return () => {
+          window.removeEventListener('resize', handleResize);
+          if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        };
+      }, []);
 
-.globeMaterial(
+      useEffect(() => {
+        if (globeInstanceRef.current) {
+          if (activeCity) {
+            globeInstanceRef.current.controls().autoRotate = false;
+            globeInstanceRef.current.pointOfView({ lat: activeCity.lat, lng: activeCity.lng, altitude: 0.6 }, 1500);
+          } else {
+            globeInstanceRef.current.controls().autoRotate = true;
+            globeInstanceRef.current.pointOfView({ lat: 35, lng: 105, altitude: 1.8 }, 1500);
+          }
+        }
+      }, [activeCity]);
 
-new THREE.MeshPhongMaterial({
-color:0x000000,
-shininess:0
-})
+      const closePanel = () => setActiveCity(null);
 
-)
+      return (
+        <div className="h-screen w-screen bg-black text-white font-mono selection:bg-white selection:text-black relative flex flex-col overflow-hidden">
+          
+          <div className="grunge-overlay"></div>
+          <div className="scanlines"></div>
 
-.showAtmosphere(true)
-.atmosphereColor('#ffffff')
-.atmosphereAltitude(0.1)
+          {/* ========================================== */}
+          {/* 纯装饰性 UI 元素 (模拟图2的数据面板) */}
+          {/* ========================================== */}
+          
+          {/* 左下角数据波形 (SVG 模拟) */}
+          <div className="hidden md:block absolute bottom-8 left-8 z-20 pointer-events-none opacity-40">
+            <div className="text-[8px] mb-1">ANALYZING ASTRAL PLANE // SCK</div>
+            <svg width="150" height="60" viewBox="0 0 150 60" className="border border-white/20">
+              <polyline points="0,50 10,40 20,45 30,20 40,35 50,15 60,30 70,5 80,25 90,40 100,10 110,35 120,45 130,20 140,50 150,40" fill="none" stroke="white" strokeWidth="1"/>
+              <line x1="0" y1="55" x2="150" y2="55" stroke="white" strokeWidth="0.5" strokeDasharray="2,2"/>
+              <rect x="5" y="5" width="4" height="4" fill="white"/>
+            </svg>
+          </div>
 
-.showGraticules(true)
+          {/* 右上角坐标雷达 (SVG 模拟) */}
+          <div className="hidden md:block absolute top-8 right-8 z-20 pointer-events-none opacity-40">
+            <svg width="100" height="100" viewBox="0 0 100 100" className="animate-[spin_10s_linear_infinite]">
+              <circle cx="50" cy="50" r="45" fill="none" stroke="white" strokeWidth="0.5" strokeDasharray="4,4"/>
+              <circle cx="50" cy="50" r="30" fill="none" stroke="white" strokeWidth="0.5"/>
+              <line x1="50" y1="0" x2="50" y2="100" stroke="white" strokeWidth="0.5"/>
+              <line x1="0" y1="50" x2="100" y2="50" stroke="white" strokeWidth="0.5"/>
+              <circle cx="70" cy="30" r="2" fill="white"/>
+            </svg>
+            <div className="text-[8px] text-right mt-2">TARGET // LOCKED</div>
+          </div>
 
-.pointOfView({
-lat:35,
-lng:105,
-altitude:1.8
-})
+          {/* ========================================== */}
+          {/* 顶部导航与重新设计的 Logo */}
+          {/* ========================================== */}
+          <header className="absolute top-0 w-full z-40 pointer-events-none">
+            <div className="max-w-screen-2xl mx-auto px-6 py-6 flex justify-between items-start pointer-events-auto">
+              
+              <div className="flex items-center gap-4">
+                {/* 新 Logo：旋转的线框球体 */}
+                <div className="w-8 h-8 relative flex items-center justify-center animate-[spin_8s_linear_infinite]">
+                  <IconCrosshair size={32} />
+                  <div className="absolute inset-0 border border-white/30 rounded-full"></div>
+                </div>
+                <div>
+                  <h1 className="text-xl md:text-2xl font-bold tracking-[0.2em] leading-none">NAHFI.ASIA</h1>
+                  <p className="text-[9px] text-white/50 tracking-widest mt-1">ASTRAL // HIP-HOP TERMINAL v0.04</p>
+                </div>
+              </div>
+              
+              <div className="hidden md:block text-right">
+                <div className="text-[10px] tracking-widest opacity-60">CODEX_SCK_VECTOR_2026</div>
+                <div className="w-24 h-px bg-white/30 ml-auto mt-1 mb-1"></div>
+                <div className="text-[8px] opacity-40">LAT: VARIABLE / LNG: UNKNOWN</div>
+              </div>
 
-.polygonsTransitionDuration(300)
+            </div>
+          </header>
 
-.polygonCapColor(()=> 'rgba(255,255,255,0.05)')
-.polygonSideColor(()=> 'rgba(0,0,0,0)')
-.polygonStrokeColor(()=> 'rgba(255,255,255,0.25)')
+          {/* 核心交互区域：容纳 3D 地球 */}
+          <main className="flex-1 relative z-10 w-full h-full">
+            <div ref={globeElRef} className="absolute inset-0 w-full h-full cursor-crosshair"></div>
+          </main>
 
-.arcsData(ARCS_DATA)
-.arcColor(()=> '#ffffff')
-.arcDashLength(0.4)
-.arcDashGap(4)
-.arcDashInitialGap(()=>Math.random()*5)
-.arcDashAnimateTime(3000)
-.arcAltitudeAutoScale(0.3)
+          {/* ========================================== */}
+          {/* 右侧滑动数据面板 (完全黑白、线框风格) */}
+          {/* ========================================== */}
+          <div className={`fixed inset-y-0 right-0 w-full md:w-[400px] bg-black/80 backdrop-blur-md bw-border-l z-50 transform transition-transform duration-500 flex flex-col ${activeCity ? 'translate-x-0' : 'translate-x-full'}`}>
+            {activeCity && (
+              <>
+                <div className="p-8 pt-24 md:pt-10 bw-border-b flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center gap-2 text-[10px] mb-2 opacity-60">
+                      <div className="w-1 h-1 bg-white animate-pulse"></div>
+                      <span>LOC: {activeCity.lat.toFixed(2)}, {activeCity.lng.toFixed(2)}</span>
+                    </div>
+                    <h2 className="text-5xl font-bold uppercase tracking-tighter">
+                      {activeCity.label}
+                    </h2>
+                    <h3 className="text-sm tracking-widest mt-2 opacity-80">{activeCity.name}</h3>
+                  </div>
+                  <button onClick={closePanel} className="p-2 border border-white/20 hover:bg-white hover:text-black transition-colors">
+                    <IconX size={20} />
+                  </button>
+                </div>
 
-.htmlElementsData(CITIES_DATA)
+                <div className="flex-1 overflow-y-auto no-scrollbar p-8 space-y-10">
+                  <section>
+                    <h4 className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] mb-4 opacity-50">
+                      [+] Style Matrix
+                    </h4>
+                    <div className="border-l border-white/30 pl-4">
+                      <div className="font-bold text-sm mb-2">{activeCity.style}</div>
+                      <p className="text-[11px] leading-relaxed opacity-70 text-justify">
+                        {activeCity.desc}
+                      </p>
+                    </div>
+                  </section>
 
-.htmlElement(d=>{
+                  <section>
+                    <h4 className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] mb-4 opacity-50">
+                      [+] Database Icons
+                    </h4>
+                    <ul className="space-y-2">
+                      {activeCity.rappers.map((rapper, index) => (
+                        <li key={index} className="flex items-center gap-4 group">
+                          <span className="text-[10px] opacity-30 group-hover:opacity-100 transition-opacity">0{index + 1}_</span>
+                          <span className="text-xs tracking-wide border-b border-white/0 group-hover:border-white/50 pb-0.5">{rapper}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+              </>
+            )}
+          </div>
 
-const el=document.createElement("div")
+          {/* ========================================== */}
+          {/* 底部沉浸式极简无边框播放器 (黑白机械感) */}
+          {/* ========================================== */}
+          <footer className="absolute bottom-8 w-full z-40 flex justify-center pointer-events-none">
+            <div className="flex items-center gap-6 pointer-events-auto">
+              
+              {/* 黑白旋转几何体 (替代具象的黑胶) */}
+              <div className={`w-12 h-12 border border-white/50 flex items-center justify-center bg-black ${isPlaying ? 'animate-[spin_4s_linear_infinite]' : ''}`}>
+                <div className="w-6 h-6 border-t border-r border-white"></div>
+                <div className="absolute w-2 h-2 bg-white"></div>
+              </div>
+              
+              {/* 名字与时长进度 */}
+              <div className="flex flex-col min-w-[200px]">
+                <div className="font-bold text-xs tracking-[0.2em] uppercase mb-2">
+                   {activeCity ? `> ${activeCity.label}_CIPHER.wav` : "> SYSTEM_IDLE"}
+                </div>
+                <div className="flex items-center gap-3 text-[10px] opacity-70">
+                   <span>{isPlaying ? '01:24' : '00:00'}</span>
+                   {/* 极简线框进度条 */}
+                   <div className="flex-1 h-px bg-white/20 relative">
+                      <div className={`absolute top-0 left-0 h-full bg-white transition-all duration-1000 ${isPlaying ? 'w-1/3' : 'w-0'}`}></div>
+                      {/* 进度光标 */}
+                      {isPlaying && <div className="absolute top-1/2 -translate-y-1/2 left-1/3 w-1 h-3 bg-white shadow-[0_0_5px_#fff]"></div>}
+                   </div>
+                   <span>04:20</span>
+                </div>
+              </div>
 
-el.style.transform="translate(-50%,-50%)"
-el.style.pointerEvents="auto"
+              {/* 播放/暂停按钮 */}
+              <button 
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="w-10 h-10 border border-white/30 flex items-center justify-center hover:bg-white hover:text-black transition-all ml-4"
+              >
+                 {isPlaying ? <IconPause size={16} /> : <IconPlay size={16} />}
+              </button>
 
-el.innerHTML=`
+            </div>
+          </footer>
 
-<div class="flex flex-col items-center">
+        </div>
+      );
+    }
 
-<div class="w-2 h-2 bg-white border border-black mb-1"></div>
-
-<div class="text-[10px] bg-black/80 px-1 border border-white/40">
-${d.name}
-</div>
-
-<div class="text-[8px] opacity-60">
-${d.label}
-</div>
-
-</div>
-
-`
-
-return el
-
-})
-
-fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
-.then(res=>res.json())
-.then(data=>{
-
-globe.polygonsData(data.features)
-
-})
-
-globe.controls().autoRotate=true
-globe.controls().autoRotateSpeed=0.3
-
-},[])
-
-return(
-
-<div className="w-screen h-screen">
-
-<div ref={globeRef}
-className="w-full h-full"></div>
-
-<div className="scanlines"></div>
-
-</div>
-
-)
-
-}
-
-const root=ReactDOM.createRoot(document.getElementById("root"))
-
-root.render(<App/>)
-
-</script>
-
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<NahfiHipHopMuseum />);
+  </script>
 </body>
 </html>
+
 
 
 
