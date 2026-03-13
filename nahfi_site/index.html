@@ -52,6 +52,12 @@
     /* 黑白 UI 边框 */
     .bw-border { border: 1px solid rgba(255, 255, 255, 0.3); }
     .bw-border-b { border-bottom: 1px solid rgba(255, 255, 255, 0.3); }
+    
+    /* 城市标签样式优化 */
+    .city-label {
+      text-shadow: 0 0 5px rgba(0,0,0,0.8);
+      transition: all 0.2s ease;
+    }
   </style>
 </head>
 <body>
@@ -65,18 +71,183 @@
     const IconPlay = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><polygon points="7 4 19 12 7 20 7 4"/></svg>;
     const IconPause = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>;
     const IconCrosshair = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>;
+    const IconLink = ({size=16}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>;
+    const IconMic = ({size=16}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>;
+    const IconStar = ({size=16}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
 
-    // 城市数据（增加英文名称及新城市）
+    // 城市数据（大幅丰富内容）
     const CITIES_DATA = [
-      { id: 'cdc', name: '成都', enName: 'CHENGDU', label: 'CDC', lat: 30.6586, lng: 104.0648, style: 'Trap / 休闲与凶狠', desc: '作为中文Trap的绝对重镇，成都的嘻哈音乐完美融合了市井的茶馆文化和国际化的808鼓点。', rappers: ['Higher Brothers', '谢帝', 'Ty.', '王以太', '李尔新'] },
-      { id: 'gosh', name: '重庆', enName: 'CHONGQING', label: 'GO$H', lat: 29.5630, lng: 106.5516, style: 'Trap / 勒是雾都的江湖气', desc: '重庆是一座赛博朋克与魔幻现实交织的3D城市，这里的说唱充满了山城防空洞里的粗粝感与市井兄弟情。', rappers: ['GAI周延', 'Bridge布瑞吉', 'L4WUDU', '王齐铭'] },
-      { id: 'csc', name: '长沙', enName: 'CHANGSHA', label: 'CSC', lat: 28.2282, lng: 112.9388, style: 'Boombap / 江湖流与湘江词魂', desc: 'CSC代表着中文说唱歌词的灵魂深度。长沙说唱扎根于街头，以硬核的BoomBap风格为主。', rappers: ['C-Block', '西奥Sio', 'Ranzer', 'Yee'] },
-      { id: 'beijing', name: '北京', enName: 'BEIJING', label: 'BJ Underground', lat: 39.9042, lng: 116.4074, style: 'Old School / 地下启蒙与叙事', desc: '作为中文说唱的发源地之一，北京的Hip-Hop带着深深的地下皇城根底色，更注重叙事和双关语。', rappers: ['隐藏', '王波', '龙井说唱', '阴三儿', '辉子'] },
-      { id: 'nanjing', name: '南京', enName: 'NANJING', label: 'Free-Out', lat: 32.0603, lng: 118.7969, style: 'Boombap & Melodic / 诗意与凶狠', desc: '金陵城的说唱带着一种独特的文学质感与硬核态度的碰撞，在旋律和意识流上独树一帜。', rappers: ['光光', 'Ice Paper', 'Round_2', 'Trouble.Z'] },
-      { id: 'xian', name: '西安', enName: 'XI\'AN', label: 'NOUS', lat: 34.3416, lng: 108.9398, style: 'Conscious / 思想与技巧的巅峰', desc: '十三朝古都孕育了中文说唱圈最顶尖的技术流和思想派，被誉为中文说唱的“少林寺”。', rappers: ['派克特', 'Cream D', '辛巴', '张昊'] },
-      { id: 'urumqi', name: '乌鲁木齐', enName: 'URUMQI', label: '0991', lat: 43.8256, lng: 87.6168, style: 'BoomBap & Melodic / 西域风情', desc: '新疆说唱拥有极高的天赋与独特的民族风情音乐元素，这里的Rapper在旋律和硬核说唱上都有着顶级的表现力。', rappers: ['艾热', '黄旭', '马俊', 'A-Mac'] },
-      { id: 'shanghai', name: '上海', enName: 'SHANGHAI', label: 'SH', lat: 31.2304, lng: 121.4737, style: 'Urban / 前卫与国际化', desc: '魔都的说唱融合了国际化视野与前卫的电子元素，既有老学校的传承，也有最尖端的潮流风格。', rappers: ['Cee', 'GALI', 'Kozay'] },
-      { id: 'guangzhou', name: '广州', enName: 'GUANGZHOU', label: 'CHILLGUN', lat: 23.1291, lng: 113.2644, style: 'Cantonese / 粤语说唱根基', desc: '作为南方Hip-Hop的重镇，广州保留了最纯正的粤语说唱文化，讲究韵脚的平仄与市井文化的表达。', rappers: ['Vyan', 'AR刘夫阳', '瘦恒', '讲者'] }
+      { 
+        id: 'cdc', 
+        name: '成都', 
+        enName: 'CHENGDU', 
+        label: 'CDC', 
+        lat: 30.6586, 
+        lng: 104.0648, 
+        style: 'Trap / 休闲与凶狠', 
+        desc: '作为中文Trap的绝对重镇，成都的嘻哈音乐完美融合了市井的茶馆文化和国际化的808鼓点。这里的说唱既保留了川渝地区特有的慵懒腔调，又具备国际化的制作水准，成为中文说唱商业化最成功的代表。', 
+        rappers: ['Higher Brothers', '谢帝', 'Ty.', '王以太', '李尔新'],
+        representativeWorks: [
+          'Higher Brothers - 《Made In China》',
+          '谢帝 - 《老子明天不上班》',
+          '王以太 - 《目不转睛》',
+          'Ty. - 《凹造型》'
+        ],
+        feature: '方言特色鲜明、商业化程度高、旋律性强',
+        sceneScale: '国内第一梯队，拥有完整的产业链'
+      },
+      { 
+        id: 'gosh', 
+        name: '重庆', 
+        enName: 'CHONGQING', 
+        label: 'GO$H', 
+        lat: 29.5630, 
+        lng: 106.5516, 
+        style: 'Trap / 勒是雾都的江湖气', 
+        desc: '重庆是一座赛博朋克与魔幻现实交织的3D城市，这里的说唱充满了山城防空洞里的粗粝感与市井兄弟情。GO$H MUSIC厂牌以其独特的江湖气和硬核的街头风格成为西南说唱的重要力量。', 
+        rappers: ['GAI周延', 'Bridge布瑞吉', 'L4WUDU', '王齐铭'],
+        representativeWorks: [
+          'GAI - 《故湘，风》',
+          'Bridge - 《老大》',
+          'L4WUDU - 《雾必野》',
+          '王齐铭 - 《顶天立地》'
+        ],
+        feature: '江湖气浓厚、方言押韵精妙、舞台表现力强',
+        sceneScale: '西南核心力量，地下与主流结合典范'
+      },
+      { 
+        id: 'csc', 
+        name: '长沙', 
+        enName: 'CHANGSHA', 
+        label: 'CSC', 
+        lat: 28.2282, 
+        lng: 112.9388, 
+        style: 'Boombap / 江湖流与湘江词魂', 
+        desc: 'CSC代表着中文说唱歌词的灵魂深度。长沙说唱扎根于街头，以硬核的BoomBap风格为主，歌词充满人文关怀和社会观察，被称为"湘江词魂"。Sup Music厂牌是长沙说唱的核心代表。', 
+        rappers: ['C-Block', '西奥Sio', 'Ranzer', 'Yee'],
+        representativeWorks: [
+          'C-Block - 《江湖流》',
+          '西奥Sio - 《Vancci》',
+          'Ranzer - 《湘·绣》',
+          'Yee - 《都市寻情记》'
+        ],
+        feature: '歌词文学性强、BoomBap基底、人文关怀突出',
+        sceneScale: '中部说唱中心，地下文化标杆'
+      },
+      { 
+        id: 'beijing', 
+        name: '北京', 
+        enName: 'BEIJING', 
+        label: 'BJ Underground', 
+        lat: 39.9042, 
+        lng: 116.4074, 
+        style: 'Old School / 地下启蒙与叙事', 
+        desc: '作为中文说唱的发源地之一，北京的Hip-Hop带着深深的地下皇城根底色，更注重叙事和双关语。从早期的隐藏、龙门阵到后来的龙胆紫，北京始终保持着最纯粹的地下说唱精神。', 
+        rappers: ['隐藏', '王波', '龙井说唱', '阴三儿', '辉子'],
+        representativeWorks: [
+          '隐藏 - 《在北京》',
+          '龙井说唱 - 《归》',
+          '阴三儿 - 《老师你好》',
+          '王波 - 《自由式》'
+        ],
+        feature: 'Old School风格、叙事性强、京味儿浓厚',
+        sceneScale: '中文说唱发源地，地下文化根基深厚'
+      },
+      { 
+        id: 'nanjing', 
+        name: '南京', 
+        enName: 'NANJING', 
+        label: 'Free-Out', 
+        lat: 32.0603, 
+        lng: 118.7969, 
+        style: 'Boombap & Melodic / 诗意与凶狠', 
+        desc: '金陵城的说唱带着一种独特的文学质感与硬核态度的碰撞，在旋律和意识流上独树一帜。Free-Out厂牌汇聚了南京最具代表性的Rapper，风格多样但始终保持高水准的词作。', 
+        rappers: ['光光', 'Ice Paper', 'Round_2', 'Trouble.Z'],
+        representativeWorks: [
+          'Ice Paper - 《心如止水》',
+          '光光 - 《谢谢你》',
+          'Round_2 - 《Kill The Game》',
+          'Trouble.Z - 《少数派报告》'
+        ],
+        feature: '旋律性强、歌词诗意、技术流代表',
+        sceneScale: '华东说唱重镇，技术流聚集地'
+      },
+      { 
+        id: 'xian', 
+        name: '西安', 
+        enName: 'XI\'AN', 
+        label: 'NOUS', 
+        lat: 34.3416, 
+        lng: 108.9398, 
+        style: 'Conscious / 思想与技巧的巅峰', 
+        desc: '十三朝古都孕育了中文说唱圈最顶尖的技术流和思想派，被誉为中文说唱的"少林寺"。NOUS UNDERGROUND厂牌以派克特为核心，代表了中文说唱的最高技术水准和思想深度。', 
+        rappers: ['派克特', 'Cream D', '辛巴', '张昊'],
+        representativeWorks: [
+          '派克特 - 《午夜伤心电台》',
+          'Cream D - 《黑马》',
+          '辛巴 - 《亿万光年》',
+          '张昊 - 《经济舱》'
+        ],
+        feature: '技术流天花板、意识流说唱、制作精良',
+        sceneScale: '西北说唱核心，技术流标杆'
+      },
+      { 
+        id: 'urumqi', 
+        name: '乌鲁木齐', 
+        enName: 'URUMQI', 
+        label: '0991', 
+        lat: 43.8256, 
+        lng: 87.6168, 
+        style: 'BoomBap & Melodic / 西域风情', 
+        desc: '新疆说唱拥有极高的天赋与独特的民族风情音乐元素，这里的Rapper在旋律和硬核说唱上都有着顶级的表现力。多元的民族文化和语言环境造就了新疆说唱独特的魅力。', 
+        rappers: ['艾热', '黄旭', '马俊', 'A-Mac'],
+        representativeWorks: [
+          '艾热 - 《星球坠落》',
+          '黄旭 - 《如果真的是比说唱真的强你好几倍》',
+          '马俊 - 《Hi那》',
+          'A-Mac - 《乌鲁木齐》'
+        ],
+        feature: '民族元素融合、旋律天赋高、flow多变',
+        sceneScale: '西北特色代表，国际化潜力大'
+      },
+      { 
+        id: 'shanghai', 
+        name: '上海', 
+        enName: 'SHANGHAI', 
+        label: 'SH', 
+        lat: 31.2304, 
+        lng: 121.4737, 
+        style: 'Urban / 前卫与国际化', 
+        desc: '魔都的说唱融合了国际化视野与前卫的电子元素，既有老学校的传承，也有最尖端的潮流风格。上海说唱更注重制作的精致度和国际化的表达，是中文说唱与国际接轨的前沿。', 
+        rappers: ['Cee', 'GALI', 'Kozay'],
+        representativeWorks: [
+          'GALI - 《70%》',
+          'Cee - 《成皿宝于》',
+          'Kozay - 《经济舱 (Remix)》',
+          'Key.L - 《孤独症》'
+        ],
+        feature: '国际化视野、电子元素融合、制作精良',
+        sceneScale: '国际化前沿，潮流风格引领者'
+      },
+      { 
+        id: 'guangzhou', 
+        name: '广州', 
+        enName: 'GUANGZHOU', 
+        label: 'CHILLGUN', 
+        lat: 23.1291, 
+        lng: 113.2644, 
+        style: 'Cantonese / 粤语说唱根基', 
+        desc: '作为南方Hip-Hop的重镇，广州保留了最纯正的粤语说唱文化，讲究韵脚的平仄与市井文化的表达。CHILLGUN厂牌延续了粤语说唱的传统，同时融入现代的制作理念。', 
+        rappers: ['Vyan', 'AR刘夫阳', '瘦恒', '讲者'],
+        representativeWorks: [
+          '讲者 - 《广州广州》',
+          'AR刘夫阳 - 《押韵歌》',
+          'Vyan - 《阿珍爱上了阿强》',
+          '瘦恒 - 《地道广州》'
+        ],
+        feature: '粤语说唱传承、市井文化、韵脚考究',
+        sceneScale: '粤语说唱中心，南方文化代表'
+      }
     ];
 
     const ARCS_DATA = [
@@ -161,7 +332,7 @@
           .labelAltitude(0.01)
 
           // ==========================================
-          // 城市节点：极简的黑白小方块，附带中英文标签
+          // 城市节点：直接显示英文名称 + 小方块
           // ==========================================
           .htmlElementsData(CITIES_DATA)
           .htmlElement(d => {
@@ -170,14 +341,15 @@
             el.style.pointerEvents = "auto";
             el.style.cursor = "crosshair";
             
+            // 修改：直接显示英文城市名，不再隐藏
             el.innerHTML = `
-              <div class="relative group flex flex-col items-center">
+              <div class="relative group flex flex-col items-center city-label">
                 <!-- 极简白色小方块 -->
                 <div class="w-1.5 h-1.5 bg-white border border-black group-hover:bg-black group-hover:border-white transition-colors z-10 shadow-[0_0_10px_rgba(255,255,255,0.8)]"></div>
-                <!-- 悬浮时显示的标签，黑底白字，中英文对应 -->
-                <div class="absolute top-full mt-1.5 hidden group-hover:flex flex-col items-center z-20">
-                  <div class="px-1.5 py-0.5 bg-black border border-white/50 text-white text-[9px] font-bold uppercase tracking-widest whitespace-nowrap">
-                    [+] ${d.label} // ${d.enName}
+                <!-- 直接显示英文名称，悬浮时高亮 -->
+                <div class="absolute top-full mt-1 flex flex-col items-center z-20">
+                  <div class="px-1.5 py-0.5 bg-black/80 border border-white/50 text-white text-[9px] font-bold uppercase tracking-widest whitespace-nowrap group-hover:bg-black group-hover:border-white transition-all">
+                    ${d.enName} (${d.label})
                   </div>
                 </div>
               </div>
@@ -331,9 +503,9 @@
           </main>
 
           {/* ========================================== */}
-          {/* 右侧滑动数据面板 */}
+          {/* 右侧滑动数据面板（大幅丰富内容） */}
           {/* ========================================== */}
-          <div className={`fixed inset-y-0 right-0 w-full md:w-[400px] bg-black/80 backdrop-blur-md bw-border-l z-50 transform transition-transform duration-500 flex flex-col ${activeCity ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className={`fixed inset-y-0 right-0 w-full md:w-[480px] bg-black/80 backdrop-blur-md bw-border-l z-50 transform transition-transform duration-500 flex flex-col ${activeCity ? 'translate-x-0' : 'translate-x-full'}`}>
             {activeCity && (
               <>
                 <div className="p-8 pt-24 md:pt-10 bw-border-b flex justify-between items-start">
@@ -355,9 +527,10 @@
                 </div>
 
                 <div className="flex-1 overflow-y-auto no-scrollbar p-8 space-y-10">
+                  {/* 风格矩阵 */}
                   <section>
                     <h4 className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] mb-4 opacity-50">
-                      [+] Style Matrix
+                      <IconStar size={12} className="mt-0.5" /> [+] Style Matrix
                     </h4>
                     <div className="border-l border-white/30 pl-4">
                       <div className="font-bold text-sm mb-2">{activeCity.style}</div>
@@ -367,9 +540,10 @@
                     </div>
                   </section>
 
+                  {/* 代表艺人 */}
                   <section>
                     <h4 className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] mb-4 opacity-50">
-                      [+] Database Icons
+                      <IconMic size={12} className="mt-0.5" /> [+] Key Artists
                     </h4>
                     <ul className="space-y-2">
                       {activeCity.rappers.map((rapper, index) => (
@@ -380,6 +554,45 @@
                       ))}
                     </ul>
                   </section>
+
+                  {/* 代表作品 */}
+                  <section>
+                    <h4 className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] mb-4 opacity-50">
+                      <IconPlay size={12} className="mt-0.5" /> [+] Representative Works
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {activeCity.representativeWorks.map((work, index) => (
+                        <div key={index} className="border border-white/10 p-3 hover:border-white/30 transition-all group">
+                          <div className="text-[10px] opacity-40 mb-1">TRACK_{index + 1}</div>
+                          <div className="text-xs">{work}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* 城市特色 */}
+                  <section>
+                    <h4 className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] mb-4 opacity-50">
+                      <IconLink size={12} className="mt-0.5" /> [+] Scene Features
+                    </h4>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-start gap-3">
+                        <span className="text-[10px] opacity-40 mt-0.5">FEATURE:</span>
+                        <span className="text-xs opacity-80">{activeCity.feature}</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="text-[10px] opacity-40 mt-0.5">SCALE:</span>
+                        <span className="text-xs opacity-80">{activeCity.sceneScale}</span>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+
+                {/* 底部信息栏 */}
+                <div className="p-6 bw-border-t border-white/20">
+                  <div className="text-[9px] opacity-40 tracking-wider">
+                    DATA SOURCE: NAHFI HIP-HOP ARCHIVE // UPDATED: 2026.03
+                  </div>
                 </div>
               </>
             )}
@@ -429,6 +642,7 @@
   </script>
 </body>
 </html>
+
 
 
 
