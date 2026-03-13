@@ -3,38 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NAHFI.ASIA - 中文说唱地下博物馆</title>
+  <title>NAHFI.ASIA - 中文说唱地下博物馆 (全息地图版)</title>
   
-  <!-- 1. 引入 Tailwind CSS 引擎 (用于直接渲染样式) -->
+  <!-- 引入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- 2. 引入 React 和 ReactDOM (CDN 静态资源) -->
+  <!-- 引入 React 和 ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   
-  <!-- 3. 引入 Babel (用于在浏览器端直接编译 JSX 语法) -->
+  <!-- 引入 Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    /* 注入自定义的 CSS 动画和滤镜特效 */
-    body { margin: 0; background-color: #09090b; }
+    body { margin: 0; background-color: #09090b; overflow: hidden; }
+    /* 扫描线与噪点遮罩 */
     .crt-overlay {
       background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
       background-size: 100% 4px, 6px 100%;
       pointer-events: none;
+      z-index: 50;
     }
+    /* 雷达扫描动画 */
+    @keyframes radar-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .radar-sweep {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 200%; height: 200%;
+      background: conic-gradient(from 0deg, transparent 70%, rgba(239, 68, 68, 0.1) 100%);
+      transform-origin: 0 0;
+      animation: radar-spin 10s linear infinite;
+      pointer-events: none;
+    }
+    /* 故障文字特效 */
     .glitch-text { position: relative; }
     .glitch-text::before, .glitch-text::after {
       content: attr(data-text);
       position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%; opacity: 0.8;
+      top: 0; left: 0; width: 100%; height: 100%; opacity: 0.8; pointer-events: none;
     }
     .glitch-text::before {
       left: 2px; text-shadow: -2px 0 red; clip: rect(24px, 550px, 90px, 0);
       animation: glitch-anim-2 3s infinite linear alternate-reverse;
     }
     .glitch-text::after {
-      left: -2px; text-shadow: -2px 0 blue; clip: rect(85px, 550px, 140px, 0);
+      left: -2px; text-shadow: -2px 0 cyan; clip: rect(85px, 550px, 140px, 0);
       animation: glitch-anim 2.5s infinite linear alternate-reverse;
     }
     @keyframes glitch-anim {
@@ -53,212 +69,338 @@
       80% { clip: rect(54px, 9999px, 78px, 0); }
       100% { clip: rect(23px, 9999px, 19px, 0); }
     }
+    /* 隐藏滚动条 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
 <body>
-  <!-- React 应用的挂载点 -->
   <div id="root"></div>
 
-  <!-- 我们的主程序代码 -->
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // --- 提取图标为内联 SVG (避免 GitHub Pages 找不到外部依赖) ---
+    // --- 图标组件 ---
     const IconMic2 = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 8-9.04 9.06a2.828 2.828 0 1 0 3.98 3.98L16 12"/><circle cx="17" cy="7" r="5"/></svg>;
-    const IconZap = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
-    const IconTerminal = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>;
-    const IconSkull = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>;
-    const IconMap = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>;
-    const IconFlame = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>;
-    const IconChevronRight = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>;
+    const IconX = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
     const IconRadio = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="2"/><path d="M4.93 10.93a10 10 0 0 1 14.14 0"/><path d="M2 18h20"/><path d="M8.46 14.46a5 5 0 0 1 7.08 0"/></svg>;
     const IconPlay = ({className, size=24, fill="none"}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="5 3 19 12 5 21 5 3"/></svg>;
     const IconPause = ({className, size=24, fill="none"}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>;
     const IconVolume2 = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>;
+    const IconUser = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+    const IconMusic = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
+    const IconMapPin = ({className, size=24}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
 
-    // --- 主组件逻辑 ---
+    // ==========================================
+    // 💡 后期维护指南：在这里添加/修改城市点位
+    // x 和 y 是基于地图容器的百分比坐标 (0-100)
+    // 左上角为 x:0, y:0
+    // ==========================================
+    const CITIES_DATA = [
+      {
+        id: 'cdc',
+        name: '成都',
+        label: 'CDC',
+        x: 40, y: 65,  // 修改百分比调整位置
+        color: 'text-cyan-400',
+        bgColor: 'bg-cyan-400',
+        glow: 'shadow-[0_0_20px_rgba(34,211,238,0.8)]',
+        style: 'Trap / 休闲与凶狠的结合',
+        desc: '作为中文Trap的绝对重镇，成都的嘻哈音乐完美融合了市井的茶馆文化和国际化的808鼓点。这里的Rapper操着极具辨识度的西南官话，看似慵懒随性，但做出来的Beat和Flow却极具攻击性与前瞻性。',
+        rappers: ['Higher Brothers (马思唯, KnowKnow...)', '谢帝 (Boss Shady)', 'Ty.', '王以太', '李尔新']
+      },
+      {
+        id: 'gosh',
+        name: '重庆',
+        label: 'GO$H',
+        x: 48, y: 68,
+        color: 'text-red-500',
+        bgColor: 'bg-red-500',
+        glow: 'shadow-[0_0_20px_rgba(239,68,68,0.8)]',
+        style: 'Trap / 勒是雾都的江湖气',
+        desc: '重庆是一座赛博朋克与魔幻现实交织的3D城市，这里的说唱充满了山城防空洞里的粗粝感与市井兄弟情。方言的声调让重庆Trap拥有独特的咬字节奏，现场永远是最躁的。',
+        rappers: ['GAI周延', 'Bridge布瑞吉', 'L4WUDU (雾都)', '王齐铭', 'K Eleven']
+      },
+      {
+        id: 'csc',
+        name: '长沙',
+        label: 'CSC',
+        x: 62, y: 72,
+        color: 'text-orange-500',
+        bgColor: 'bg-orange-500',
+        glow: 'shadow-[0_0_20px_rgba(249,115,22,0.8)]',
+        style: 'Boombap / 江湖流与湘江词魂',
+        desc: 'CSC代表着中文说唱歌词的灵魂深度。长沙说唱扎根于街头，以硬核的BoomBap风格为主，歌词如同湘菜一样火辣直接，讲述着底层的奋斗、兄弟情义和真正的“江湖流”。',
+        rappers: ['C-Block (大傻, 功夫胖, 刘聪)', '西奥Sio', 'Ranzer', 'Yee']
+      },
+      {
+        id: 'beijing',
+        name: '北京',
+        label: 'BJ Underground',
+        x: 68, y: 35,
+        color: 'text-yellow-400',
+        bgColor: 'bg-yellow-400',
+        glow: 'shadow-[0_0_20px_rgba(250,204,21,0.8)]',
+        style: 'Old School / 地下启蒙与叙事',
+        desc: '作为中文说唱的发源地之一，北京的Hip-Hop带着深深的地下皇城根底色。从Iron Mic的地下室到各大Livehouse，这里的说唱更注重叙事、双关语和纯正的Old School味道。',
+        rappers: ['隐藏 (Yin Ts\'ang)', '王波 (Webber)', '龙井说唱', '阴三儿 (In3)', '辉子']
+      },
+      {
+        id: 'nanjing',
+        name: '南京',
+        label: 'Free-Out',
+        x: 75, y: 58,
+        color: 'text-purple-500',
+        bgColor: 'bg-purple-500',
+        glow: 'shadow-[0_0_20px_rgba(168,85,247,0.8)]',
+        style: 'Boombap & Melodic / 诗意与凶狠',
+        desc: '金陵城的说唱带着一种独特的文学质感与硬核态度的碰撞。Free-Out厂牌不仅保留了街头的一面，也在旋律说唱和意识流词作上独树一帜。',
+        rappers: ['光光 (MC 光光)', 'Ice Paper', 'Round_2', 'Trouble.Z']
+      },
+      {
+        id: 'xian',
+        name: '西安',
+        label: 'NOUS',
+        x: 55, y: 45,
+        color: 'text-emerald-400',
+        bgColor: 'bg-emerald-400',
+        glow: 'shadow-[0_0_20px_rgba(52,211,153,0.8)]',
+        style: 'Conscious / 思想与技巧的巅峰',
+        desc: '十三朝古都孕育了中文说唱圈最顶尖的技术流和思想派。NOUS厂牌以极其复杂的韵脚编排、深刻的社会反思和纯正的Hip-Hop精神，被誉为中文说唱的“少林寺”。',
+        rappers: ['派克特 (PACT)', 'Cream D', '辛巴 (SIMBA)', '张昊']
+      }
+    ];
+
+    // ==========================================
+    // 主应用组件
+    // ==========================================
     function NahfiHipHopMuseum() {
       const [isPlaying, setIsPlaying] = useState(false);
-      const [activeZone, setActiveZone] = useState(null);
-      const [typingText, setTypingText] = useState('');
-      
-      const fullWelcomeText = "Yo! 欢迎来到 nahfi.asia 中文说唱地下博物馆。我是这里的数字策展人 Nahfi。从Iron Mic的地下室到CDC的老茶馆，Keep it Real，随便逛逛吧...";
+      const [activeCity, setActiveCity] = useState(null);
+      const [hoveredCity, setHoveredCity] = useState(null);
 
-      useEffect(() => {
-        let i = 0;
-        const typingInterval = setInterval(() => {
-          if (i < fullWelcomeText.length) {
-            setTypingText(fullWelcomeText.substring(0, i + 1));
-            i++;
-          } else {
-            clearInterval(typingInterval);
-          }
-        }, 50);
-        return () => clearInterval(typingInterval);
-      }, []);
-
-      const exhibitionZones = [
-        {
-          id: 'underground',
-          title: '地下启蒙 (1990s-2010)',
-          subtitle: 'Iron Mic & 隐藏',
-          icon: <IconSkull size={32} className="text-zinc-400 group-hover:text-red-500 transition-colors" />,
-          desc: '回到那个没有伴奏、只有Beatbox和麦克风的纯粹年代。探索北京胡同里的Hip-Hop启蒙。',
-          color: 'border-red-500/50 hover:border-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.4)]',
-          bgImg: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&q=80&w=600'
-        },
-        {
-          id: 'regional',
-          title: '地域割据 (2010-2017)',
-          subtitle: 'CDC / CSC / GO$H',
-          icon: <IconMap size={32} className="text-zinc-400 group-hover:text-cyan-400 transition-colors" />,
-          desc: '方言说唱的黄金年代。成都的Trap、长沙的江湖流、重庆的勒是雾都，在这里划分版图。',
-          color: 'border-cyan-500/50 hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]',
-          bgImg: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?auto=format&fit=crop&q=80&w=600'
-        },
-        {
-          id: 'mainstream',
-          title: '地上狂潮 (2017-至今)',
-          subtitle: '综艺与新浪潮',
-          icon: <IconFlame size={32} className="text-zinc-400 group-hover:text-yellow-500 transition-colors" />,
-          desc: '聚光灯亮起，金项链与百万流量。从地下走到地上，中文说唱产业的彻底爆发与多元化演变。',
-          color: 'border-yellow-500/50 hover:border-yellow-500 hover:shadow-[0_0_20px_rgba(234,179,8,0.4)]',
-          bgImg: 'https://images.unsplash.com/photo-1543808003-88ec0cce9e62?auto=format&fit=crop&q=80&w=600'
-        }
-      ];
+      // 关闭面板
+      const closePanel = () => setActiveCity(null);
 
       return (
-        <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-red-500 selection:text-white relative overflow-hidden flex flex-col">
+        <div className="h-screen w-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-red-500 selection:text-white relative flex flex-col">
           
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:32px_32px]"></div>
-          <div className="absolute inset-0 crt-overlay z-50"></div>
+          {/* 全局噪点背景和扫描线 */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+          <div className="absolute inset-0 crt-overlay pointer-events-none"></div>
 
-          <header className="relative z-40 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
-            <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-              <div className="flex items-center gap-2">
+          {/* --- 顶部导航 --- */}
+          <header className="absolute top-0 w-full z-40 border-b border-zinc-800/50 bg-zinc-950/50 backdrop-blur-md">
+            <div className="max-w-screen-2xl mx-auto px-6 py-4 flex justify-between items-center">
+              <div className="flex items-center gap-3">
                 <IconMic2 className="text-red-500 animate-pulse" />
-                <span className="font-black text-xl tracking-tighter uppercase">NAHFI<span className="text-red-500">.ASIA</span></span>
+                <span className="font-black text-xl tracking-tighter uppercase glitch-text" data-text="NAHFI.ASIA">
+                  NAHFI<span className="text-red-500">.ASIA</span>
+                </span>
+                <span className="hidden md:inline-block ml-4 text-xs font-mono text-zinc-500 border border-zinc-800 px-2 py-1 rounded bg-zinc-900/50">
+                  SYSTEM_STATUS: ONLINE
+                </span>
               </div>
-              <nav className="hidden md:flex gap-8 text-sm font-bold tracking-widest uppercase text-zinc-400">
-                <a href="#" className="hover:text-red-500 transition-colors">展览馆</a>
-                <a href="#" className="hover:text-red-500 transition-colors">厂牌地图</a>
-                <a href="#" className="hover:text-red-500 transition-colors">关于 Nahfi</a>
-              </nav>
-              <button className="md:hidden text-zinc-400">
-                <IconZap />
-              </button>
+              <div className="text-xs font-bold tracking-[0.3em] uppercase text-zinc-400">
+                中国嘻哈地理全息图
+              </div>
             </div>
           </header>
 
-          <main className="flex-1 relative z-30 flex flex-col">
-            <div className="max-w-7xl mx-auto px-6 py-12 md:py-20 w-full">
-              <div className="mb-12 inline-block">
-                <div className="bg-zinc-900 border-2 border-zinc-700 p-4 rounded-sm flex items-start gap-4 max-w-2xl relative shadow-[8px_8px_0px_rgba(39,39,42,1)]">
-                  <div className="absolute -top-3 -left-3 w-8 h-8 bg-zinc-800 border border-zinc-600 flex items-center justify-center transform -rotate-12">
-                    <IconTerminal size={16} className="text-green-400" />
-                  </div>
+          {/* --- 核心互动地图区域 --- */}
+          <main className="flex-1 relative z-10 w-full h-full flex items-center justify-center overflow-hidden pt-16 pb-20">
+            
+            {/* 地图背景容器 (控制长宽比和全息效果) */}
+            <div className="relative w-[95%] max-w-6xl aspect-[4/3] md:aspect-[16/9] border border-zinc-800/50 rounded-2xl bg-zinc-900/20 backdrop-blur-sm overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] inset-0">
+              
+              {/* 雷达扫描动画 */}
+              <div className="radar-sweep"></div>
+              
+              {/* 装饰性数字地图轮廓 (使用虚线构成抽象的中国版图感) */}
+              <div className="absolute inset-0 opacity-20 pointer-events-none flex items-center justify-center">
+                <svg viewBox="0 0 1000 800" className="w-full h-full drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                  <path 
+                    d="M 850 300 C 800 200, 600 150, 500 200 C 400 250, 300 200, 200 300 C 100 400, 200 600, 400 700 C 600 800, 800 600, 850 500 Z" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeDasharray="10 10" 
+                    className="text-zinc-600"
+                  />
+                  {/* 经纬网格线 */}
+                  <line x1="10%" y1="0" x2="10%" y2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  <line x1="30%" y1="0" x2="30%" y2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  <line x1="50%" y1="0" x2="50%" y2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  <line x1="70%" y1="0" x2="70%" y2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  <line x1="90%" y1="0" x2="90%" y2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  <line y1="20%" x1="0" y2="20%" x2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  <line y1="40%" x1="0" y2="40%" x2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  <line y1="60%" x1="0" y2="60%" x2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                  <line y1="80%" x1="0" y2="80%" x2="100%" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                </svg>
+              </div>
+
+              {/* 中心文字背景 (未选择城市时显示) */}
+              {!activeCity && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20">
+                  <h1 className="text-6xl md:text-9xl font-black uppercase tracking-tighter text-zinc-500">
+                    HIP-HOP
+                  </h1>
+                  <h2 className="text-4xl md:text-7xl font-bold uppercase tracking-[0.5em] text-zinc-600 mt-2">
+                    MAP
+                  </h2>
+                </div>
+              )}
+
+              {/* ========================================== */}
+              {/* 渲染城市点位 */}
+              {/* ========================================== */}
+              {CITIES_DATA.map((city) => (
+                <div 
+                  key={city.id}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20 cursor-pointer group"
+                  style={{ left: `${city.x}%`, top: `${city.y}%` }}
+                  onMouseEnter={() => setHoveredCity(city)}
+                  onMouseLeave={() => setHoveredCity(null)}
+                  onClick={() => setActiveCity(city)}
+                >
+                  {/* 点位外圈的光晕特效 */}
+                  <div className={`absolute -inset-4 rounded-full opacity-0 group-hover:opacity-40 transition-opacity duration-300 blur-md ${city.bgColor}`}></div>
                   
-                  <div className="w-16 h-16 bg-zinc-800 rounded-sm border border-zinc-600 flex-shrink-0 overflow-hidden relative group">
-                    <div className="absolute inset-0 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
-                      🎧
-                    </div>
-                  </div>
+                  {/* 呼吸扩大的外环 (代表电波/影响范围) */}
+                  <div className={`absolute inset-0 rounded-full animate-ping opacity-30 ${city.bgColor}`}></div>
                   
-                  <div className="flex-1">
-                    <div className="text-xs font-bold text-green-400 mb-1 tracking-widest uppercase flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                      Sys.Admin // NAHFI
+                  {/* 核心发光点 */}
+                  <div className={`w-4 h-4 md:w-5 md:h-5 rounded-full border-2 border-zinc-900 relative z-10 transition-transform duration-300 ${city.bgColor} ${city.glow} ${activeCity?.id === city.id || hoveredCity?.id === city.id ? 'scale-150' : 'scale-100'}`}>
+                  </div>
+
+                  {/* 城市标签 (悬浮或选中时显示) */}
+                  <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-3 flex flex-col items-center transition-all duration-300 ${activeCity?.id === city.id || hoveredCity?.id === city.id ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+                    <div className={`px-3 py-1 bg-zinc-900 border ${activeCity?.id === city.id ? 'border-white text-white' : 'border-zinc-700 text-zinc-300'} text-xs font-bold uppercase tracking-widest whitespace-nowrap shadow-lg`}>
+                      {city.label}
                     </div>
-                    <p className="font-mono text-sm leading-relaxed text-zinc-300 min-h-[60px]">
-                      {typingText}
-                      <span className="inline-block w-2 h-4 bg-green-400 ml-1 animate-pulse"></span>
-                    </p>
+                    <div className={`text-[10px] mt-1 font-mono tracking-widest ${city.color}`}>
+                      {city.name}
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="mb-16">
-                <h2 className="text-xl md:text-2xl font-bold text-zinc-500 mb-2 uppercase tracking-[0.3em]">
-                  The History of Chinese Hip-Hop
-                </h2>
-                <h1 
-                  className="text-6xl md:text-8xl font-black uppercase tracking-tighter glitch-text text-zinc-100" 
-                  data-text="中文说唱编年史"
-                >
-                  中文说唱编年史
-                </h1>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {exhibitionZones.map((zone) => (
-                  <div 
-                    key={zone.id}
-                    onMouseEnter={() => setActiveZone(zone.id)}
-                    onMouseLeave={() => setActiveZone(null)}
-                    className={`group relative h-96 bg-zinc-900 border-2 ${zone.color} rounded-sm overflow-hidden cursor-pointer transition-all duration-300`}
-                  >
-                    <div 
-                      className="absolute inset-0 bg-cover bg-center opacity-20 group-hover:opacity-40 transition-opacity duration-500 grayscale group-hover:grayscale-0"
-                      style={{ backgroundImage: `url(${zone.bgImg})` }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
-                    
-                    <div className="absolute top-4 right-4 text-zinc-800 text-6xl font-black opacity-30 group-hover:opacity-10 transition-opacity">
-                      0{exhibitionZones.indexOf(zone) + 1}
-                    </div>
-
-                    <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                      <div className="mb-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                        {zone.icon}
-                      </div>
-                      <h3 className="text-zinc-400 text-sm font-bold uppercase tracking-widest mb-1">{zone.subtitle}</h3>
-                      <h2 className="text-2xl font-black mb-3">{zone.title}</h2>
-                      
-                      <div className="h-0 opacity-0 group-hover:h-auto group-hover:opacity-100 group-hover:mt-2 overflow-hidden transition-all duration-300">
-                        <p className="text-zinc-400 text-sm leading-relaxed mb-4">
-                          {zone.desc}
-                        </p>
-                        <button className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white bg-zinc-800 hover:bg-zinc-700 px-4 py-2 border border-zinc-600 transition-colors">
-                          进入街区 <IconChevronRight size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
+            
+            {/* 提示文案 */}
+            {!activeCity && (
+              <div className="absolute bottom-28 left-1/2 -translate-x-1/2 text-zinc-500 text-sm font-mono tracking-widest animate-pulse pointer-events-none flex items-center gap-2">
+                <IconMapPin size={16} /> 点击节点解密当地厂牌档案
+              </div>
+            )}
+
           </main>
 
-          <footer className="relative z-50 border-t border-zinc-800 bg-zinc-950 p-4">
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* ========================================== */}
+          {/* 右侧/底部滑动档案面板 (点击城市后弹出) */}
+          {/* ========================================== */}
+          <div className={`fixed inset-y-0 right-0 w-full md:w-[450px] bg-zinc-950/90 backdrop-blur-xl border-l border-zinc-800 z-50 transform transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.8)] ${activeCity ? 'translate-x-0' : 'translate-x-full'}`}>
+            
+            {activeCity && (
+              <>
+                {/* 顶部标题栏 */}
+                <div className="p-6 border-b border-zinc-800 flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-mono mb-2">
+                      <span className={`w-2 h-2 rounded-full animate-pulse ${activeCity.bgColor}`}></span>
+                      <span className={activeCity.color}>DATA_LOADED // NODE: {activeCity.x}_{activeCity.y}</span>
+                    </div>
+                    <h2 className={`text-4xl font-black uppercase tracking-tighter ${activeCity.color} drop-shadow-[0_0_10px_currentColor]`}>
+                      {activeCity.label}
+                    </h2>
+                    <h3 className="text-xl font-bold text-white mt-1">{activeCity.name}</h3>
+                  </div>
+                  <button 
+                    onClick={closePanel}
+                    className="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-sm border border-zinc-700 transition-colors"
+                  >
+                    <IconX size={20} />
+                  </button>
+                </div>
+
+                {/* 滚动内容区 */}
+                <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-8">
+                  
+                  {/* 文化风格 */}
+                  <section>
+                    <h4 className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 border-b border-zinc-800 pb-2">
+                      <IconMusic size={14} /> 风格特征 (Style)
+                    </h4>
+                    <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-sm border-l-4" style={{borderLeftColor: activeCity.bgColor.replace('bg-', '')}}>
+                      <div className={`font-bold text-lg mb-2 ${activeCity.color}`}>
+                        {activeCity.style}
+                      </div>
+                      <p className="text-zinc-400 text-sm leading-relaxed text-justify">
+                        {activeCity.desc}
+                      </p>
+                    </div>
+                  </section>
+
+                  {/* 代表人物 */}
+                  <section>
+                    <h4 className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 border-b border-zinc-800 pb-2">
+                      <IconUser size={14} /> 核心代表 (Icons)
+                    </h4>
+                    <ul className="space-y-2">
+                      {activeCity.rappers.map((rapper, index) => (
+                        <li key={index} className="bg-zinc-900/50 border border-zinc-800 p-3 flex items-center gap-3 hover:bg-zinc-800 transition-colors cursor-default group">
+                          <span className={`text-xs font-mono font-bold w-6 opacity-30 group-hover:opacity-100 ${activeCity.color}`}>0{index + 1}</span>
+                          <span className="text-zinc-200 text-sm font-medium">{rapper}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+
+                {/* 底部装饰 */}
+                <div className="p-6 border-t border-zinc-800 bg-zinc-900/50">
+                  <button className={`w-full py-3 text-sm font-bold uppercase tracking-widest text-zinc-900 transition-all duration-300 shadow-lg ${activeCity.bgColor} hover:opacity-80`}>
+                    播放城市歌单
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+
+          {/* --- 底部复古音乐播放器 --- */}
+          <footer className="absolute bottom-0 w-full z-40 border-t border-zinc-800 bg-zinc-950/80 backdrop-blur-md p-4">
+            <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
               
               <div className="flex items-center gap-4 w-full md:w-auto">
-                <div className={`w-12 h-12 rounded-full bg-zinc-900 border-2 border-zinc-700 flex items-center justify-center ${isPlaying ? 'animate-[spin_3s_linear_infinite]' : ''}`}>
-                  <div className="w-4 h-4 rounded-full bg-zinc-950 border border-red-500"></div>
+                <div className={`w-10 h-10 rounded-full bg-zinc-900 border-2 border-zinc-700 flex items-center justify-center ${isPlaying ? 'animate-[spin_3s_linear_infinite]' : ''}`}>
+                  <div className="w-3 h-3 rounded-full bg-zinc-950 border border-red-500"></div>
                 </div>
                 <div>
-                  <div className="text-xs text-red-500 font-bold tracking-widest uppercase flex items-center gap-2 mb-1">
-                    Now Playing {isPlaying && <IconRadio size={12} className="animate-pulse" />}
+                  <div className="text-[10px] text-red-500 font-bold tracking-widest uppercase flex items-center gap-2 mb-1">
+                    Global Broadcast {isPlaying && <IconRadio size={10} className="animate-pulse" />}
                   </div>
-                  <div className="font-mono text-sm text-zinc-300">隐藏 (Yin Ts'ang) - 在北京</div>
+                  <div className="font-mono text-sm text-zinc-300">
+                    {activeCity ? `正在播放: ${activeCity.label} Cipher` : "等待接入城市信号..."}
+                  </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-6">
                 <button 
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className="w-12 h-12 bg-red-600 hover:bg-red-500 rounded-sm flex items-center justify-center text-white transition-colors border-2 border-red-800 hover:shadow-[0_0_15px_rgba(220,38,38,0.5)]"
+                  className="w-10 h-10 bg-red-600 hover:bg-red-500 rounded-sm flex items-center justify-center text-white transition-colors border-2 border-red-800 hover:shadow-[0_0_15px_rgba(220,38,38,0.5)]"
                 >
-                  {isPlaying ? <IconPause size={20} fill="currentColor" /> : <IconPlay size={20} fill="currentColor" className="ml-1" />}
+                  {isPlaying ? <IconPause size={16} fill="currentColor" /> : <IconPlay size={16} fill="currentColor" className="ml-0.5" />}
                 </button>
                 
                 <div className="hidden md:flex flex-col gap-1 w-32">
                   <div className="flex justify-between items-center text-[10px] text-zinc-500 font-mono">
-                    <span>VOL</span>
+                    <span>SYS.VOL</span>
                     <IconVolume2 size={12} />
                   </div>
                   <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="h-full w-2/3 bg-zinc-500"></div>
+                    <div className="h-full w-2/3 bg-red-500"></div>
                   </div>
                 </div>
               </div>
@@ -270,12 +412,12 @@
       );
     }
 
-    // 将 React 渲染挂载到 DOM
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<NahfiHipHopMuseum />);
   </script>
 </body>
 </html>
+
 
 
 
